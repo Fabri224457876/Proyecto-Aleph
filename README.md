@@ -140,11 +140,10 @@ La configuración va por variables `ALEPH_*`; ver [`.env.example`](.env.example)
 - Validación de conectores y de Aleph Lens contra las plataformas reales.
 - Despliegue con Docker Compose.
 
-## Equipo
+## Autor
 
-Proyecto de un equipo de cinco estudiantes de Prácticas Profesionalizantes.
-Dirección técnica y arquitectura: Fabrizio Pianarosa.
+Fabrizio Pianarosa. Proyecto individual: diseño, arquitectura y desarrollo.
 
-Desarrollado con asistencia de herramientas de IA bajo dirección y revisión humana: la arquitectura, los contratos entre módulos, los límites del producto y la verificación de cada entrega son decisiones del equipo.
+Desarrollado con asistencia de herramientas de IA bajo dirección y revisión humana: la arquitectura, los contratos entre módulos, los límites del producto y la verificación de cada entrega son decisiones del autor.
 
 Datos de MITRE ATT&CK® sujetos a sus términos de uso.
