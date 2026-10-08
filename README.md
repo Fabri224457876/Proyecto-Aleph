@@ -6,7 +6,6 @@ Investigación en fuentes abiertas con grafo de entidades, IA 100 % local, atrib
 > Estado: **en desarrollo activo** (octubre 2026). Los motores y la consola web están implementados y probados; el despliegue y la validación contra plataformas reales están en curso. La sección [Estado y verificación](#estado-y-verificación) dice exactamente qué está probado y qué no.
 
 Producto: **P.R.O.A.** (Plataforma de Reconocimiento y Operaciones Analíticas).
-Proyecto de Prácticas Profesionalizantes, 6.º año de Informática.
 
 ![Grafo de un caso de demostración con datos sintéticos](frontend/screenshots/grafo.png)
 
@@ -140,9 +139,9 @@ La configuración va por variables `ALEPH_*`; ver [`.env.example`](.env.example)
 - Validación de conectores y de Aleph Lens contra las plataformas reales.
 - Despliegue con Docker Compose.
 
-## Autor
+## Autoría
 
-Fabrizio Pianarosa. Proyecto individual: diseño, arquitectura y desarrollo.
+Aleph fue desarrollado por Fabrizio Pianarosa: diseño, arquitectura, implementación y pruebas. Se presentó en el marco de Prácticas Profesionalizantes (6.º año de Informática, Escuela Técnica N°21), donde estaba planificado como trabajo de equipo; en la práctica fue realizado por una sola persona.
 
 Desarrollado con asistencia de herramientas de IA bajo dirección y revisión humana: la arquitectura, los contratos entre módulos, los límites del producto y la verificación de cada entrega son decisiones del autor.
 
