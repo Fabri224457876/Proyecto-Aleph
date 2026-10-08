@@ -5423,10 +5423,10 @@
                   "type": "null"
                 }
               ],
-              "description": "text o uno de: person, account, email, phone, domain, ip, url, organization, location, event, hash, wallet, document, vehicle, malware, vulnerability",
+              "description": "text o uno de: person, account, email, phone, domain, ip, url, organization, location, event, hash, wallet, document, vehicle, malware, vulnerability, bank_account, alias",
               "title": "Kind"
             },
-            "description": "text o uno de: person, account, email, phone, domain, ip, url, organization, location, event, hash, wallet, document, vehicle, malware, vulnerability"
+            "description": "text o uno de: person, account, email, phone, domain, ip, url, organization, location, event, hash, wallet, document, vehicle, malware, vulnerability, bank_account, alias"
           },
           {
             "name": "since",
@@ -6933,6 +6933,1595 @@
           }
         ]
       }
+    },
+    "/api/cases/{case_id}/collect": {
+      "post": {
+        "tags": [
+          "recolección"
+        ],
+        "summary": "Ejecutar un conector y guardar lo recolectado (queda como trabajo y en la auditoría)",
+        "operationId": "collect_api_cases__case_id__collect_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_collect_api_cases__case_id__collect_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el conector",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "El archivo supera el tamaño máximo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "El conector falló (la falla queda registrada)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Falta configurar el conector o el módulo no está instalado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools": {
+      "get": {
+        "tags": [
+          "herramientas OSINT"
+        ],
+        "summary": "Herramientas OSINT disponibles (solo lectura)",
+        "operationId": "list_tools_api_tools_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ToolOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Tools Api Tools Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{case_id}/tools/{name}/run": {
+      "post": {
+        "tags": [
+          "herramientas OSINT"
+        ],
+        "summary": "Ejecutar una herramienta OSINT y guardar sus resultados como propuestas",
+        "operationId": "run_tool_route_api_cases__case_id__tools__name__run_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          },
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_run_tool_route_api_cases__case_id__tools__name__run_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolRunOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe la herramienta",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "El archivo supera el tamaño máximo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "La herramienta no pudo consultar su fuente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/export/stix": {
+      "get": {
+        "tags": [
+          "intercambio CTI"
+        ],
+        "summary": "Exportar el caso como Bundle STIX 2.1 (queda auditado)",
+        "description": "Bundle determinista: exportar dos veces el mismo caso da el mismo JSON.\n\nSi hay objetos `x-aleph-*` (billeteras, eventos, lugares sin coordenadas), el bundle exige\n`allow_custom` para leer sus referencias: el header `X-Aleph-Requires-Allow-Custom` lo indica.",
+        "operationId": "export_stix_api_cases__case_id__export_stix_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "max_tlp",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "clear",
+                    "green",
+                    "amber",
+                    "amber+strict",
+                    "red"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Nivel TLP máximo: no se exporta nada con un TLP más restrictivo",
+              "title": "Max Tlp"
+            },
+            "description": "Nivel TLP máximo: no se exporta nada con un TLP más restrictivo"
+          },
+          {
+            "name": "include_pending",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Incluir propuestas e hipótesis de MENARD pendientes",
+              "default": false,
+              "title": "Include Pending"
+            },
+            "description": "Incluir propuestas e hipótesis de MENARD pendientes"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No hay objetos exportables con esos criterios",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/export/misp": {
+      "get": {
+        "tags": [
+          "intercambio CTI"
+        ],
+        "summary": "Exportar el caso como evento MISP (queda auditado)",
+        "description": "Evento MISP con atributos. Las relaciones entre entidades no se exportan en esta versión\n(aparecen como `skipped` en la auditoría).",
+        "operationId": "export_misp_api_cases__case_id__export_misp_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "max_tlp",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "clear",
+                    "green",
+                    "amber",
+                    "amber+strict",
+                    "red"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Nivel TLP máximo: no se exporta nada con un TLP más restrictivo",
+              "title": "Max Tlp"
+            },
+            "description": "Nivel TLP máximo: no se exporta nada con un TLP más restrictivo"
+          },
+          {
+            "name": "include_pending",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Incluir propuestas e hipótesis de MENARD pendientes",
+              "default": false,
+              "title": "Include Pending"
+            },
+            "description": "Incluir propuestas e hipótesis de MENARD pendientes"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/import/stix": {
+      "post": {
+        "tags": [
+          "intercambio CTI"
+        ],
+        "summary": "Importar un Bundle STIX 2.1 como entidades y relaciones propuestas",
+        "operationId": "import_stix_api_cases__case_id__import_stix_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Bundle STIX 2.1 en JSON",
+                "title": "Bundle"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StixImportOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "El documento no es un bundle STIX válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/ioc/extract": {
+      "post": {
+        "tags": [
+          "CTI"
+        ],
+        "summary": "Extraer IOCs de un texto y guardarlos como propuestas",
+        "operationId": "extract_iocs_api_cases__case_id__ioc_extract_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IocExtractIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IocExtractOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/entities/{entity_id}/enrich": {
+      "post": {
+        "tags": [
+          "CTI"
+        ],
+        "summary": "Consultar proveedores CTI sobre un indicador; lo nuevo queda como propuesta",
+        "operationId": "enrich_api_cases__case_id__entities__entity_id__enrich_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Entity Id"
+            }
+          },
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrichOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ningún proveedor consulta ese tipo de entidad",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/captures/chunks": {
+      "post": {
+        "tags": [
+          "CTI"
+        ],
+        "summary": "Datachunks de un texto: IOCs y reglas argentinas de FUNES (sin LLM, sin guardar nada)",
+        "operationId": "captures_chunks_api_cases__case_id__captures_chunks_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChunksIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Datachunk"
+                  },
+                  "title": "Response Captures Chunks Api Cases  Case Id  Captures Chunks Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/attack/layer": {
+      "get": {
+        "tags": [
+          "CTI"
+        ],
+        "summary": "Capa para ATT&CK Navigator con las técnicas vinculadas al caso",
+        "operationId": "attack_layer_api_cases__case_id__attack_layer_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "include_pending",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Incluir técnicas propuestas",
+              "default": false,
+              "title": "Include Pending"
+            },
+            "description": "Incluir técnicas propuestas"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/attack/techniques": {
+      "post": {
+        "tags": [
+          "CTI"
+        ],
+        "summary": "Vincular una técnica ATT&CK al caso (decisión del analista)",
+        "operationId": "link_technique_api_cases__case_id__attack_techniques_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TechniqueLinkIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechniqueLinkOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "El ID no existe en ATT&CK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/attack/techniques": {
+      "get": {
+        "tags": [
+          "CTI"
+        ],
+        "summary": "Buscar técnicas ATT&CK por ID o texto",
+        "operationId": "search_techniques_api_attack_techniques_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "ID (T1566), prefijo de ID o texto del nombre",
+              "title": "Q"
+            },
+            "description": "ID (T1566), prefijo de ID o texto del nombre"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TechniqueOut"
+                  },
+                  "title": "Response Search Techniques Api Attack Techniques Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/funes/ner": {
+      "post": {
+        "tags": [
+          "FUNES"
+        ],
+        "summary": "Extraer entidades y relaciones de un texto o una fuente (propuestas)",
+        "operationId": "ner_api_cases__case_id__funes_ner_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NerIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NerOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "La fuente fue alterada"
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida"
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/funes/contradictions": {
+      "post": {
+        "tags": [
+          "FUNES"
+        ],
+        "summary": "Detectar contradicciones espacio-temporales y de valores entre fuentes",
+        "operationId": "contradictions_api_cases__case_id__funes_contradictions_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContradictionsIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContradictionsOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida"
+          },
+          "503": {
+            "description": "Hay fuentes de texto y el LLM no está o no responde"
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/funes/report": {
+      "post": {
+        "tags": [
+          "FUNES"
+        ],
+        "summary": "Borrador de informe de inteligencia en Markdown (queda auditado)",
+        "operationId": "report_api_cases__case_id__funes_report_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El LLM no está configurado o no responde"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -7323,6 +8912,73 @@
           "detail"
         ],
         "title": "AuditVerifyOut"
+      },
+      "Body_collect_api_cases__case_id__collect_post": {
+        "properties": {
+          "connector": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Connector",
+            "description": "Nombre del conector, p. ej. bluesky o generic_csv"
+          },
+          "params": {
+            "type": "string",
+            "title": "Params",
+            "description": "Parámetros del conector, como objeto JSON",
+            "default": "{}"
+          },
+          "file": {
+            "anyOf": [
+              {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File",
+            "description": "Archivo, solo para conectores de importación"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connector"
+        ],
+        "title": "Body_collect_api_cases__case_id__collect_post"
+      },
+      "Body_run_tool_route_api_cases__case_id__tools__name__run_post": {
+        "properties": {
+          "target": {
+            "type": "string",
+            "maxLength": 2048,
+            "title": "Target",
+            "description": "Dato a analizar: dominio, IP, wallet, CVE...",
+            "default": ""
+          },
+          "params": {
+            "type": "string",
+            "title": "Params",
+            "description": "Argumentos opcionales de la herramienta, como objeto JSON",
+            "default": "{}"
+          },
+          "file": {
+            "anyOf": [
+              {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File",
+            "description": "Archivo para herramientas que analizan bytes"
+          }
+        },
+        "type": "object",
+        "title": "Body_run_tool_route_api_cases__case_id__tools__name__run_post"
       },
       "Body_upload_source_api_cases__case_id__sources_upload_post": {
         "properties": {
@@ -7751,6 +9407,161 @@
         "type": "object",
         "title": "CaseUpdate"
       },
+      "ChunksIn": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 200000,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "page_url": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Page Url",
+            "description": "URL de la página, si la hay",
+            "default": ""
+          },
+          "page_title": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Page Title",
+            "default": ""
+          },
+          "platform": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Platform",
+            "default": "generic"
+          },
+          "captured_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Captured At",
+            "description": "Por defecto, ahora (UTC)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "ChunksIn"
+      },
+      "Claim": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "predicate": {
+            "type": "string",
+            "title": "Predicate"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "default": ""
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "time_mode": {
+            "type": "string",
+            "enum": [
+              "durante",
+              "dentro_de"
+            ],
+            "title": "Time Mode",
+            "default": "durante"
+          },
+          "open_end": {
+            "type": "boolean",
+            "title": "Open End",
+            "default": false
+          },
+          "place": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Place"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": ""
+          },
+          "quote": {
+            "type": "string",
+            "title": "Quote",
+            "default": ""
+          },
+          "offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offset"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence",
+            "default": 1.0
+          },
+          "props": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Props"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "subject",
+          "predicate"
+        ],
+        "title": "Claim",
+        "description": "Una afirmación de una fuente sobre un sujeto.\n\nTiempo: `start` solo es un instante; `start` y `end` son un intervalo. `time_mode` dice cómo\nleer el intervalo: \"durante\" (el hecho vale todo el intervalo) o \"dentro_de\" (ocurrió en algún\nmomento del intervalo, p. ej. \"el 10 de marzo\" sin hora). `open_end` marca un estado que\nsigue vigente. Las fechas sin zona horaria se toman como UTC."
+      },
       "ClusterSummary": {
         "properties": {
           "members": {
@@ -7784,6 +9595,36 @@
           "cohesion"
         ],
         "title": "ClusterSummary"
+      },
+      "CollectOut": {
+        "properties": {
+          "job_id": {
+            "type": "integer",
+            "title": "Job Id"
+          },
+          "connector": {
+            "type": "string",
+            "title": "Connector"
+          },
+          "ignored_params": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Ignored Params",
+            "description": "Claves que el conector no declara, o que solo fija la API (path, data)"
+          },
+          "ingest": {
+            "$ref": "#/components/schemas/IngestSummary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "connector",
+          "ingest"
+        ],
+        "title": "CollectOut"
       },
       "CollectionResult": {
         "properties": {
@@ -7886,6 +9727,178 @@
         ],
         "title": "ConnectorOut"
       },
+      "Contradiction": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "espacio_temporal",
+              "valor_unico",
+              "intervalos_excluyentes"
+            ],
+            "title": "Kind"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "baja",
+              "media",
+              "alta"
+            ],
+            "title": "Severity"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "claim_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Claim Ids"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          },
+          "readings": {
+            "items": {
+              "$ref": "#/components/schemas/Reading"
+            },
+            "type": "array",
+            "title": "Readings"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation",
+            "default": ""
+          },
+          "explanation_source": {
+            "type": "string",
+            "enum": [
+              "",
+              "llm",
+              "plantilla"
+            ],
+            "title": "Explanation Source",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "severity",
+          "subject",
+          "claim_ids",
+          "sources",
+          "summary"
+        ],
+        "title": "Contradiction"
+      },
+      "ContradictionsIn": {
+        "properties": {
+          "source_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Source Ids",
+            "description": "Fuentes con texto: el LLM extrae sus afirmaciones"
+          },
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/Claim"
+            },
+            "type": "array",
+            "title": "Claims",
+            "description": "Afirmaciones ya estructuradas (sin LLM)"
+          },
+          "gazetteer": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Gazetteer",
+            "description": "Lugar -> [latitud, longitud], para las coordenadas"
+          },
+          "utc_offset_hours": {
+            "type": "number",
+            "maximum": 14.0,
+            "minimum": -12.0,
+            "title": "Utc Offset Hours",
+            "description": "Huso de las horas sin zona",
+            "default": -3.0
+          },
+          "max_speed_kmh": {
+            "type": "number",
+            "maximum": 20000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Max Speed Kmh",
+            "description": "Velocidad máxima de traslado",
+            "default": 900.0
+          }
+        },
+        "type": "object",
+        "title": "ContradictionsIn"
+      },
+      "ContradictionsOut": {
+        "properties": {
+          "llm_status": {
+            "type": "string",
+            "title": "Llm Status"
+          },
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/Claim"
+            },
+            "type": "array",
+            "title": "Claims"
+          },
+          "contradictions": {
+            "items": {
+              "$ref": "#/components/schemas/Contradiction"
+            },
+            "type": "array",
+            "title": "Contradictions"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "llm_status",
+          "claims",
+          "contradictions"
+        ],
+        "title": "ContradictionsOut"
+      },
       "Datachunk": {
         "properties": {
           "kind": {
@@ -7956,6 +9969,125 @@
         "title": "Datachunk",
         "description": "Fragmento detectado en pantalla por Aleph Lens y resaltado para el analista."
       },
+      "DateMention": {
+        "properties": {
+          "iso": {
+            "type": "string",
+            "title": "Iso"
+          },
+          "cita": {
+            "type": "string",
+            "title": "Cita"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "con_hora": {
+            "type": "boolean",
+            "title": "Con Hora",
+            "default": false
+          },
+          "anio_de_dos_digitos": {
+            "type": "boolean",
+            "title": "Anio De Dos Digitos",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "iso",
+          "cita",
+          "offset"
+        ],
+        "title": "DateMention",
+        "description": "Fecha detectada por reglas. No es una entidad del grafo; sirve a la línea de tiempo."
+      },
+      "EnrichOut": {
+        "properties": {
+          "source_id": {
+            "type": "integer",
+            "title": "Source Id"
+          },
+          "indicator": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Indicator"
+          },
+          "verdict": {
+            "type": "string",
+            "title": "Verdict",
+            "description": "El más severo entre los proveedores que respondieron"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/EnrichResultOut"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "persisted": {
+            "$ref": "#/components/schemas/PersistSummary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_id",
+          "indicator",
+          "verdict",
+          "results",
+          "persisted"
+        ],
+        "title": "EnrichOut"
+      },
+      "EnrichResultOut": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "verdict": {
+            "type": "string",
+            "title": "Verdict"
+          },
+          "labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Labels"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": ""
+          },
+          "retry_after": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retry After"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "status",
+          "verdict"
+        ],
+        "title": "EnrichResultOut"
+      },
       "EntityCreate": {
         "properties": {
           "type": {
@@ -7976,7 +10108,9 @@
               "document",
               "vehicle",
               "malware",
-              "vulnerability"
+              "vulnerability",
+              "bank_account",
+              "alias"
             ],
             "title": "Type"
           },
@@ -8142,7 +10276,9 @@
                   "document",
                   "vehicle",
                   "malware",
-                  "vulnerability"
+                  "vulnerability",
+                  "bank_account",
+                  "alias"
                 ]
               },
               {
@@ -8813,6 +10949,60 @@
         ],
         "title": "IngestSummary"
       },
+      "IocExtractIn": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 200000,
+            "minLength": 1,
+            "title": "Text",
+            "description": "Texto libre: informe, nota, pegado"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "IocExtractIn"
+      },
+      "IocExtractOut": {
+        "properties": {
+          "source_id": {
+            "type": "integer",
+            "title": "Source Id"
+          },
+          "persisted": {
+            "$ref": "#/components/schemas/PersistSummary"
+          },
+          "techniques": {
+            "items": {
+              "$ref": "#/components/schemas/TechniqueMention"
+            },
+            "type": "array",
+            "title": "Techniques",
+            "description": "Técnicas ATT&CK mencionadas: sugerencias, no vínculos"
+          },
+          "discarded": {
+            "items": {
+              "$ref": "#/components/schemas/aleph__cti__ioc__Discarded"
+            },
+            "type": "array",
+            "title": "Discarded",
+            "description": "Candidatos descartados, con el motivo"
+          },
+          "defanged_input": {
+            "type": "boolean",
+            "title": "Defanged Input",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_id",
+          "persisted"
+        ],
+        "title": "IocExtractOut"
+      },
       "JobOut": {
         "properties": {
           "id": {
@@ -9255,6 +11445,104 @@
         ],
         "title": "Message"
       },
+      "NerIn": {
+        "properties": {
+          "text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "Texto a analizar"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id",
+            "description": "O bien, una fuente del caso con texto guardado"
+          },
+          "use_llm": {
+            "type": "boolean",
+            "title": "Use Llm",
+            "description": "False: solo reglas, sin consultar al LLM",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "NerIn"
+      },
+      "NerOut": {
+        "properties": {
+          "source_id": {
+            "type": "integer",
+            "title": "Source Id"
+          },
+          "llm_status": {
+            "type": "string",
+            "title": "Llm Status",
+            "description": "usado | no_responde | no_configurado | omitido"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "persisted": {
+            "$ref": "#/components/schemas/PersistSummary"
+          },
+          "entities": {
+            "items": {
+              "$ref": "#/components/schemas/EntityOut"
+            },
+            "type": "array",
+            "title": "Entities"
+          },
+          "relations": {
+            "items": {
+              "$ref": "#/components/schemas/RelationOut"
+            },
+            "type": "array",
+            "title": "Relations"
+          },
+          "dates": {
+            "items": {
+              "$ref": "#/components/schemas/DateMention"
+            },
+            "type": "array",
+            "title": "Dates",
+            "description": "Fechas de reglas (para la línea de tiempo)"
+          },
+          "discarded": {
+            "items": {
+              "$ref": "#/components/schemas/aleph__funes__ner__Discarded"
+            },
+            "type": "array",
+            "title": "Discarded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_id",
+          "llm_status",
+          "persisted",
+          "entities",
+          "relations"
+        ],
+        "title": "NerOut"
+      },
       "Page_AccountOut_": {
         "properties": {
           "items": {
@@ -9656,6 +11944,91 @@
         ],
         "title": "PathOut"
       },
+      "PersistSummary": {
+        "properties": {
+          "entities_created": {
+            "type": "integer",
+            "title": "Entities Created",
+            "default": 0
+          },
+          "entities_existing": {
+            "type": "integer",
+            "title": "Entities Existing",
+            "default": 0
+          },
+          "relations_created": {
+            "type": "integer",
+            "title": "Relations Created",
+            "default": 0
+          },
+          "relations_existing": {
+            "type": "integer",
+            "title": "Relations Existing",
+            "default": 0
+          },
+          "entity_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Entity Ids",
+            "description": "Entidades del lote, nuevas o reutilizadas"
+          },
+          "relation_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Relation Ids"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "title": "PersistSummary"
+      },
+      "Place": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "default": ""
+          },
+          "lat": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 90.0,
+                "minimum": -90.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "lon": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 180.0,
+                "minimum": -180.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lon"
+          }
+        },
+        "type": "object",
+        "title": "Place"
+      },
       "PostHit": {
         "properties": {
           "id": {
@@ -9918,6 +12291,25 @@
         ],
         "title": "PostRecord"
       },
+      "Reading": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "description"
+        ],
+        "title": "Reading",
+        "description": "Una lectura posible de la contradicción. Son alternativas; ninguna es la elegida."
+      },
       "RelationCreate": {
         "properties": {
           "src_id": {
@@ -10127,6 +12519,66 @@
         },
         "type": "object",
         "title": "RelationUpdate"
+      },
+      "ReportIn": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Title",
+            "description": "Por defecto, el nombre del caso",
+            "default": ""
+          },
+          "include_pending": {
+            "type": "boolean",
+            "title": "Include Pending",
+            "description": "Incluir propuestas e hipótesis pendientes",
+            "default": false
+          },
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/Claim"
+            },
+            "type": "array",
+            "title": "Claims",
+            "description": "Afirmaciones con contradicciones a citar"
+          }
+        },
+        "type": "object",
+        "title": "ReportIn"
+      },
+      "ReportOut": {
+        "properties": {
+          "markdown": {
+            "type": "string",
+            "title": "Markdown"
+          },
+          "generated_by": {
+            "type": "string",
+            "title": "Generated By",
+            "description": "llm | plantilla"
+          },
+          "invalid_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Invalid Ids"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "markdown",
+          "generated_by"
+        ],
+        "title": "ReportOut"
       },
       "ReviewIn": {
         "properties": {
@@ -10440,6 +12892,265 @@
         ],
         "title": "SourceOut"
       },
+      "StixImportOut": {
+        "properties": {
+          "source_id": {
+            "type": "integer",
+            "title": "Source Id"
+          },
+          "entidades_creadas": {
+            "type": "integer",
+            "title": "Entidades Creadas"
+          },
+          "entidades_existentes": {
+            "type": "integer",
+            "title": "Entidades Existentes"
+          },
+          "relaciones_creadas": {
+            "type": "integer",
+            "title": "Relaciones Creadas"
+          },
+          "relaciones_existentes": {
+            "type": "integer",
+            "title": "Relaciones Existentes"
+          },
+          "tecnicas_propuestas": {
+            "type": "integer",
+            "title": "Tecnicas Propuestas"
+          },
+          "tecnicas_ya_conocidas": {
+            "type": "integer",
+            "title": "Tecnicas Ya Conocidas"
+          },
+          "caso_del_informe": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caso Del Informe",
+            "description": "Metadatos del objeto report, si venía"
+          },
+          "omitidos": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Omitidos",
+            "description": "Objetos que no tienen equivalente (hasta 50)"
+          },
+          "omitidos_total": {
+            "type": "integer",
+            "title": "Omitidos Total",
+            "default": 0
+          },
+          "avisos": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Avisos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_id",
+          "entidades_creadas",
+          "entidades_existentes",
+          "relaciones_creadas",
+          "relaciones_existentes",
+          "tecnicas_propuestas",
+          "tecnicas_ya_conocidas"
+        ],
+        "title": "StixImportOut"
+      },
+      "TechniqueLinkIn": {
+        "properties": {
+          "technique_id": {
+            "type": "string",
+            "maxLength": 12,
+            "minLength": 3,
+            "title": "Technique Id",
+            "description": "ID ATT&CK, p. ej. T1566.002"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score",
+            "description": "Puntaje 0-100 para la capa"
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Comment",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "technique_id"
+        ],
+        "title": "TechniqueLinkIn"
+      },
+      "TechniqueLinkOut": {
+        "properties": {
+          "finding_id": {
+            "type": "integer",
+            "title": "Finding Id"
+          },
+          "technique_id": {
+            "type": "string",
+            "title": "Technique Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "comment": {
+            "type": "string",
+            "title": "Comment"
+          },
+          "estado": {
+            "type": "string",
+            "title": "Estado"
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created"
+          }
+        },
+        "type": "object",
+        "required": [
+          "finding_id",
+          "technique_id",
+          "nombre",
+          "score",
+          "comment",
+          "estado",
+          "created"
+        ],
+        "title": "TechniqueLinkOut"
+      },
+      "TechniqueMention": {
+        "properties": {
+          "technique_id": {
+            "type": "string",
+            "title": "Technique Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "tactics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tactics"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "default": ""
+          },
+          "is_subtechnique": {
+            "type": "boolean",
+            "title": "Is Subtechnique",
+            "default": false
+          },
+          "occurrences": {
+            "type": "integer",
+            "title": "Occurrences",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "technique_id",
+          "name"
+        ],
+        "title": "TechniqueMention",
+        "description": "Técnica ATT&CK mencionada en el texto. Solo IDs que existen en el índice embebido."
+      },
+      "TechniqueOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "tacticas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tacticas"
+          },
+          "nombres_tacticas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Nombres Tacticas"
+          },
+          "subtecnica": {
+            "type": "boolean",
+            "title": "Subtecnica"
+          },
+          "padre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Padre"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre",
+          "tacticas",
+          "nombres_tacticas",
+          "subtecnica",
+          "padre",
+          "url"
+        ],
+        "title": "TechniqueOut"
+      },
       "TimelineItem": {
         "properties": {
           "kind": {
@@ -10602,6 +13313,102 @@
         ],
         "title": "TokenOut"
       },
+      "ToolOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "inputs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Inputs"
+          },
+          "network": {
+            "type": "boolean",
+            "title": "Network",
+            "description": "Consulta servicios externos (siempre en solo lectura)"
+          },
+          "requires_key": {
+            "type": "boolean",
+            "title": "Requires Key"
+          },
+          "key_settings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Key Settings"
+          },
+          "is_async": {
+            "type": "boolean",
+            "title": "Is Async"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "title",
+          "description",
+          "inputs",
+          "network",
+          "requires_key",
+          "key_settings",
+          "is_async"
+        ],
+        "title": "ToolOut"
+      },
+      "ToolRunOut": {
+        "properties": {
+          "job_id": {
+            "type": "integer",
+            "title": "Job Id"
+          },
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "source_id": {
+            "type": "integer",
+            "title": "Source Id"
+          },
+          "result": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Result",
+            "description": "Resultado completo de la herramienta"
+          },
+          "persisted": {
+            "$ref": "#/components/schemas/PersistSummary"
+          },
+          "ignored_params": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Ignored Params"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "tool",
+          "source_id",
+          "result",
+          "persisted"
+        ],
+        "title": "ToolRunOut"
+      },
       "UserCreate": {
         "properties": {
           "username": {
@@ -10727,6 +13534,54 @@
           "detail"
         ],
         "title": "ValidationErrorOut"
+      },
+      "aleph__cti__ioc__Discarded": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "value",
+          "reason"
+        ],
+        "title": "Discarded",
+        "description": "Candidato que se descartó, con el motivo. Nada se pierde en silencio."
+      },
+      "aleph__funes__ner__Discarded": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "reason"
+        ],
+        "title": "Discarded",
+        "description": "Algo que propuso el LLM y se descartó, con el motivo. Para auditoría y evaluación."
       }
     },
     "securitySchemes": {

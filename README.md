@@ -99,7 +99,7 @@ Los motores no tocan la base de datos: reciben y devuelven esquemas tipados, y p
 
 | Componente | Tests | Verificado contra el mundo real |
 |---|---|---|
-| Núcleo y API (63 operaciones) | pasan | Sí, sobre SQLite. PostgreSQL pendiente |
+| Núcleo y API | pasan | Sí, sobre SQLite. PostgreSQL pendiente |
 | Auditoría encadenada | pasan, incluida escritura concurrente | Sí |
 | MENARD | pasan | Solo dataset sintético |
 | FUNES | pasan | Reglas: sí. LLM: solo con respuestas simuladas |
@@ -109,7 +109,7 @@ Los motores no tocan la base de datos: reciben y devuelven esquemas tipados, y p
 | Aleph Lens | pasan | Extractores contra HTML de ejemplo, no contra las páginas reales |
 | Consola web | build sin errores | Recorrida en navegador contra la API real; sin tests unitarios |
 
-Total: 816 tests de backend y 101 de la extensión.
+Total: 849 tests de backend (incluido un recorrido de punta a punta sobre el caso de demostración) y 106 de la extensión.
 
 ## Cómo correrlo
 
@@ -123,11 +123,18 @@ python -m venv .venv
 cd backend && ../.venv/Scripts/python -m aleph.menard.eval --write-md
 ```
 
+### Demo con datos sintéticos
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\dev.ps1
+```
+
+Crea una base local, siembra un caso ficticio de phishing (33 cuentas, 1 487 publicaciones, 23 hipótesis de MENARD, una contradicción espacio-temporal, técnicas ATT&CK) y levanta la API en `http://127.0.0.1:8100/docs`. Las credenciales de demo se generan e imprimen al final. Después, `npm install && npm run dev` en `frontend/`.
+
 La configuración va por variables `ALEPH_*`; ver [`.env.example`](.env.example).
 
 ## Hoja de ruta
 
-- Caso de demostración guiado con datos sintéticos.
 - Evaluación de MENARD con datasets públicos de verificación de autoría.
 - Embeddings de estilo en GPU como señal adicional.
 - Validación de conectores y de Aleph Lens contra las plataformas reales.

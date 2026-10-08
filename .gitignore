@@ -15,3 +15,4 @@ __pycache__/
 CLAUDE.local.md
 privado/
 *-dev.db
+data/demo/
