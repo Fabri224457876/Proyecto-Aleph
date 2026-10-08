@@ -1,0 +1,50 @@
+<!doctype html>
+<!-- Fixture SINTETICO de bsky.app (feed). Estructura de memoria a partir de los data-testid de la app
+     web oficial (social-app); validar en vivo. Cuentas ficticias. -->
+<html lang="es"><head><meta charset="utf-8"><title>Bluesky</title></head>
+<body><div id="root"><div data-testid="followingFeedPage-feed-flatlist">
+
+<div data-testid="feedItem-by-marina.ejemplo.bsky.social" role="link" tabindex="0">
+  <div><a href="/profile/marina.ejemplo.bsky.social" aria-label="Ver perfil"><div data-testid="userAvatarImage"><img src="https://cdn.bsky.app/img/avatar/plain/did:plc:abcd1234efgh5678ijkl9012/bafkreiaaaa@jpeg" alt=""></div></a></div>
+  <div>
+    <div>
+      <a href="/profile/marina.ejemplo.bsky.social" aria-label="Ver perfil"><span>Marina Ejemplo</span></a>
+      <a href="/profile/marina.ejemplo.bsky.social" aria-label="Ver perfil"><span>@marina.ejemplo.bsky.social</span></a>
+      <span>·</span>
+      <a href="/profile/marina.ejemplo.bsky.social/post/3lb2xyzabcd2k" aria-label="October 5, 2026 at 3:12 PM" data-tooltip="October 5, 2026 at 3:12 PM">2h</a>
+    </div>
+    <div data-testid="postText" lang="es">Probando esto con <a href="/profile/nico.demo.bsky.social">@nico.demo.bsky.social</a> <a href="/hashtag/Rosario">#Rosario</a> y mirá <a href="https://ejemplo.org/articulo" target="_blank" rel="noopener">ejemplo.org/articulo</a></div>
+    <div>
+      <button data-testid="replyBtn" aria-label="Responder (4 respuestas)"><span>4</span></button>
+      <button data-testid="repostBtn"><span data-testid="repostCount">11</span></button>
+      <button data-testid="likeBtn"><span data-testid="likeCount">1.2K</span></button>
+    </div>
+  </div>
+</div>
+
+<div data-testid="feedItem-by-nico.demo.bsky.social" role="link" tabindex="0">
+  <div><a href="/profile/marina.ejemplo.bsky.social" aria-label="Reposted by Marina Ejemplo"><span>Reposted by Marina Ejemplo</span></a></div>
+  <div><a href="/profile/nico.demo.bsky.social"><div data-testid="userAvatarImage"><img src="https://cdn.bsky.app/img/avatar/plain/did:plc:zzzz9999yyyy8888xxxx7777/bafkreibbbb@jpeg" alt=""></div></a></div>
+  <div>
+    <div>
+      <a href="/profile/nico.demo.bsky.social"><span>Nico Demo</span></a>
+      <a href="/profile/nico.demo.bsky.social"><span>@nico.demo.bsky.social</span></a>
+      <a href="/profile/nico.demo.bsky.social/post/3lb2aaaabbbb2c" aria-label="October 4, 2026 at 11:45 PM" data-tooltip="October 4, 2026 at 11:45 PM">17h</a>
+    </div>
+    <div data-testid="postText" lang="es">Nada que agregar.</div>
+  </div>
+</div>
+
+<div data-testid="feedItem-by-tercero.demo.bsky.social" role="link" tabindex="0">
+  <div>
+    <div>
+      <a href="/profile/tercero.demo.bsky.social"><span>Tercero</span></a>
+      <a href="/profile/tercero.demo.bsky.social"><span>@tercero.demo.bsky.social</span></a>
+      <a href="/profile/tercero.demo.bsky.social/post/3lb2ccccdddd2e" aria-label="October 5, 2026 at 4:00 PM">1h</a>
+    </div>
+    <div><span>Reply to <a href="/profile/marina.ejemplo.bsky.social">Marina Ejemplo</a></span></div>
+    <div data-testid="postText" lang="es">Coincido totalmente.</div>
+  </div>
+</div>
+
+</div></div></body></html>

@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- Fixture SINTETICO de la web actual de Reddit ("shreddit"): los datos van en atributos de los
+     componentes web. Nombres de atributos de memoria; validar en vivo. Usuarios ficticios. -->
+<html lang="es"><head><meta charset="utf-8"><title>Consulta de ejemplo : r/ejemplo</title></head>
+<body><shreddit-app><main>
+
+<shreddit-post id="t3_1abcde" author="usuario_demo_uno" author-id="t2_aaa111" permalink="/r/ejemplo/comments/1abcde/consulta_de_ejemplo/" post-title="Consulta de ejemplo sobre un dominio raro" created-timestamp="2026-10-03T18:20:11.000000+0000" subreddit-prefixed-name="r/ejemplo" score="128" comment-count="3" post-type="text" content-href="https://www.reddit.com/r/ejemplo/comments/1abcde/consulta_de_ejemplo/">
+  <h1 slot="title" id="post-title-t3_1abcde">Consulta de ejemplo sobre un dominio raro</h1>
+  <div slot="text-body"><div><p>Me llegó un mail desde soporte@banco-falso-demo.com con un link a <a href="https://banco-falso-demo.com/ingreso">https://banco-falso-demo.com/ingreso</a>. ¿Alguien lo vio?</p><p>Gracias u/moderador_demo por el aviso.</p></div></div>
+</shreddit-post>
+
+<shreddit-comment-tree>
+  <shreddit-comment author="usuario_demo_dos" author-id="t2_bbb222" thingid="t1_k1aaaa" depth="0" parentid="t3_1abcde" postid="t3_1abcde" permalink="/r/ejemplo/comments/1abcde/comment/k1aaaa/" score="40">
+    <div slot="commentMeta"><a href="/user/usuario_demo_dos/">usuario_demo_dos</a> <time datetime="2026-10-03T18:45:00.000Z">hace 2 d</time></div>
+    <div slot="comment"><p>Es phishing, la IP es 203.0.113.45 y está reportada.</p></div>
+
+    <shreddit-comment author="usuario_demo_uno" author-id="t2_aaa111" thingid="t1_k1bbbb" depth="1" parentid="t1_k1aaaa" postid="t3_1abcde" permalink="/r/ejemplo/comments/1abcde/comment/k1bbbb/" score="5" slot="children">
+      <div slot="commentMeta"><a href="/user/usuario_demo_uno/">usuario_demo_uno</a> <faceplate-timeago ts="2026-10-03T19:02:30.000Z"></faceplate-timeago></div>
+      <div slot="comment"><p>Gracias!!</p></div>
+    </shreddit-comment>
+  </shreddit-comment>
+
+  <shreddit-comment author="[deleted]" thingid="t1_k1cccc" depth="0" parentid="t3_1abcde" postid="t3_1abcde" score="1">
+    <div slot="comment"><p>[eliminado]</p></div>
+  </shreddit-comment>
+</shreddit-comment-tree>
+
+</main></shreddit-app></body></html>

@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+dist/
+.env
+*.db
+data/raw/
+data/uploads/
+node_modules/
+__pycache__/
+CLAUDE.local.md
+privado/
+*-dev.db

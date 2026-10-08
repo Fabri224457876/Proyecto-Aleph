@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aleph Lens · Opciones</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <h1>ALEPH LENS <span>opciones</span></h1>
+
+    <section>
+      <h2>Servidor Aleph</h2>
+      <p class="dim">La extensión solo se comunica con este servidor. No envía nada a ningún otro lado.</p>
+      <label for="server">URL del servidor</label>
+      <div class="row">
+        <input id="server" type="url" placeholder="http://192.0.2.10:8100" autocomplete="off" spellcheck="false">
+        <button id="save-server" type="button">Guardar</button>
+      </div>
+      <p id="server-msg" class="msg" role="status"></p>
+    </section>
+
+    <section>
+      <h2>Sesión</h2>
+      <p id="session" class="dim">Sin sesión iniciada.</p>
+      <form id="login">
+        <label for="username">Usuario</label>
+        <input id="username" type="text" autocomplete="username" spellcheck="false" required>
+        <label for="password">Contraseña</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+        <label class="check"><input id="remember" type="checkbox"> Recordar la sesión en este equipo (si no, se borra al cerrar el navegador)</label>
+        <div class="row">
+          <button type="submit">Iniciar sesión</button>
+          <button id="logout" type="button" class="ghost">Cerrar sesión</button>
+        </div>
+      </form>
+      <p id="login-msg" class="msg" role="status"></p>
+    </section>
+
+    <section>
+      <h2>Prueba de conexión</h2>
+      <button id="test" type="button">Probar conexión</button>
+      <p id="test-msg" class="msg" role="status"></p>
+    </section>
+
+    <section>
+      <h2>Cómo se comporta</h2>
+      <ul class="dim">
+        <li>La captura está apagada hasta que la encendés, por pestaña y para un caso.</li>
+        <li>Solo lee lo que la página ya tiene cargado, sobre todo lo que está en pantalla. No navega, no hace clics ni scroll automático, y no lee ni envía tus cookies ni tu sesión de la plataforma.</li>
+        <li>No lee mensajes directos, pantallas de ingreso, diálogos de ingreso ni campos de contraseña.</li>
+        <li>Los fragmentos resaltados en amarillo son sugerencias locales: al expediente solo entra lo que arrastrás o enviás vos.</li>
+      </ul>
+    </section>
+  </main>
+  <script type="module" src="options.js"></script>
+</body>
+</html>

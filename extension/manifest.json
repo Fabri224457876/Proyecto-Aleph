@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Aleph Lens",
+  "version": "0.1.0",
+  "description": "Captura asistida para casos de Aleph: lee lo que ya está en pantalla, lo envía al caso y resalta lo que el caso ya sabe.",
+  "minimum_chrome_version": "116",
+  "permissions": ["activeTab", "scripting", "sidePanel", "storage"],
+  "optional_host_permissions": ["https://*/*", "http://*/*"],
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Aleph Lens: abrir el panel en esta pestaña",
+    "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png" }
+  },
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "side_panel": { "default_path": "src/sidepanel/panel.html" },
+  "options_ui": { "page": "src/options/options.html", "open_in_tab": true },
+  "commands": {
+    "send-focused-chunk": {
+      "suggested_key": { "default": "Alt+Shift+S" },
+      "description": "Enviar el datachunk enfocado al último inciso usado"
+    },
+    "chunk-from-selection": {
+      "suggested_key": { "default": "Alt+Shift+D" },
+      "description": "Convertir el texto seleccionado en datachunk"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["src/content/*.js", "src/extractors/*.js", "src/lib/*.js"],
+      "matches": ["https://*/*", "http://*/*"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'"
+  }
+}

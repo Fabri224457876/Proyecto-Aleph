@@ -1,0 +1,15 @@
+{
+  "profile_user": [
+    {
+      "string_map_data": {
+        "Name": {"href": "", "value": "JosÃ© Demo"},
+        "Username": {"href": "https://www.instagram.com/usuario.demo", "value": "usuario.demo", "timestamp": 1700000000},
+        "Bio": {"value": "Fotos de prueba ð\u009f\u0098\u0080"},
+        "Website": {"value": "https://sitio.example.org"},
+        "Email": {"value": "usuario.demo@correo.example"}
+      },
+      "title": "usuario.demo",
+      "media_map_data": {}
+    }
+  ]
+}

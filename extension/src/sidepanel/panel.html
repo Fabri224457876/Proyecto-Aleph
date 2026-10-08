@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aleph Lens</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span id="led" class="led"></span><span>ALEPH LENS</span></div>
+    <button id="open-options" class="link" type="button">Opciones</button>
+  </header>
+
+  <section id="setup" class="notice" hidden>
+    <p>Todavía no hay servidor configurado o falta iniciar sesión.</p>
+    <button id="setup-options" type="button">Configurar servidor</button>
+  </section>
+
+  <section class="block" aria-label="Captura">
+    <label class="field">
+      <span class="label">Caso</span>
+      <span class="row">
+        <select id="case"></select>
+        <button id="reload-cases" class="icon" type="button" title="Actualizar la lista de casos" aria-label="Actualizar la lista de casos">↻</button>
+      </span>
+    </label>
+    <div class="capture">
+      <button id="toggle" class="switch" type="button" role="switch" aria-checked="false">
+        <span class="knob"></span>
+      </button>
+      <div>
+        <div id="capture-state" class="state">Captura apagada</div>
+        <div id="capture-tab" class="dim">—</div>
+      </div>
+    </div>
+    <p id="error" class="error" hidden></p>
+    <p id="paused" class="pausedmsg" hidden></p>
+  </section>
+
+  <section class="counters" aria-label="Contadores de esta sesión">
+    <div class="counter"><b id="c-accounts">0</b><span>cuentas</span></div>
+    <div class="counter"><b id="c-posts">0</b><span>publicaciones</span></div>
+    <div class="counter"><b id="c-sent">0</b><span>lotes enviados</span></div>
+    <div class="counter"><b id="c-pending">0</b><span>en cola</span></div>
+  </section>
+
+  <section id="dossier" class="block" aria-label="Expediente">
+    <h2>Expediente <span id="drag-hint" class="hint" hidden>soltá el datachunk en un inciso</span></h2>
+    <div id="sections" class="sections"></div>
+    <div id="entities-box" hidden>
+      <h3>Adjuntar a una entidad</h3>
+      <div id="entities" class="entities"></div>
+    </div>
+    <form id="new-section" class="row">
+      <input id="new-section-name" type="text" maxlength="80" placeholder="Nuevo inciso…" aria-label="Nombre del nuevo inciso">
+      <button type="submit">Crear</button>
+    </form>
+  </section>
+
+  <section class="block" aria-label="Grafo en vivo">
+    <h2>En pantalla</h2>
+    <svg id="graph" viewBox="0 0 340 230" role="img" aria-label="Cuentas en pantalla y sus conexiones"></svg>
+    <div class="legend">
+      <span><i class="sw known"></i>en el caso</span>
+      <span><i class="sw menard"></i>hipótesis MENARD</span>
+      <span><i class="ln reply"></i>respuesta</span>
+      <span><i class="ln mention"></i>mención</span>
+    </div>
+  </section>
+
+  <section class="block" aria-label="Hallazgos">
+    <h2>Hallazgos <span id="c-findings" class="hint"></span></h2>
+    <ol id="findings" class="findings"></ol>
+    <p id="empty" class="dim">Encendé la captura y navegá: lo relevante va a ir apareciendo acá.</p>
+  </section>
+
+  <script type="module" src="panel.js"></script>
+</body>
+</html>

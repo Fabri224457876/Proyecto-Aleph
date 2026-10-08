@@ -1,0 +1,70 @@
+{
+  "guild": {"id": "900", "type": "Default", "name": "Servidor Demo", "iconUrl": ""},
+  "channel": {"id": "901", "type": "GuildTextChat", "categoryId": "902", "category": "General", "name": "general", "topic": null},
+  "dateRange": {"after": null, "before": null},
+  "exportedAt": "2024-05-10T00:00:00+00:00",
+  "messageCount": 4,
+  "messages": [
+    {
+      "id": "1001",
+      "type": "Default",
+      "timestamp": "2024-04-01T12:00:00.000+00:00",
+      "timestampEdited": null,
+      "callEndedTimestamp": null,
+      "isPinned": false,
+      "content": "Hola #general, pregunta para @bob",
+      "author": {"id": "1", "name": "ana_demo", "discriminator": "0", "nickname": "Ana", "color": null, "isBot": false, "roles": []},
+      "attachments": [],
+      "embeds": [{"url": "https://embed.example/nota", "title": "Nota de prueba"}],
+      "stickers": [],
+      "reactions": [],
+      "mentions": [{"id": "2", "name": "bob", "discriminator": "0", "nickname": "Bob", "isBot": false}]
+    },
+    {
+      "id": "1002",
+      "type": "Reply",
+      "timestamp": "2024-04-01T12:05:00.000+00:00",
+      "timestampEdited": null,
+      "callEndedTimestamp": null,
+      "isPinned": false,
+      "content": "Respondo con un enlace https://ejemplo.example/a",
+      "author": {"id": "2", "name": "bob", "discriminator": "0", "nickname": "Bob", "color": null, "isBot": false, "roles": []},
+      "attachments": [],
+      "embeds": [],
+      "stickers": [],
+      "reactions": [],
+      "mentions": [],
+      "reference": {"messageId": "1001", "channelId": "901", "guildId": "900"}
+    },
+    {
+      "id": "1003",
+      "type": "RecipientAdd",
+      "timestamp": "2024-04-02T08:00:00.000+00:00",
+      "timestampEdited": null,
+      "callEndedTimestamp": null,
+      "isPinned": false,
+      "content": "",
+      "author": {"id": "1", "name": "ana_demo", "discriminator": "0", "nickname": "Ana", "color": null, "isBot": false, "roles": []},
+      "attachments": [],
+      "embeds": [],
+      "stickers": [],
+      "reactions": [],
+      "mentions": []
+    },
+    {
+      "id": "1004",
+      "type": "Default",
+      "timestamp": "2024-04-03T09:00:00.000+00:00",
+      "timestampEdited": "2024-04-03T09:01:00.000+00:00",
+      "callEndedTimestamp": null,
+      "isPinned": false,
+      "content": "",
+      "author": {"id": "1", "name": "ana_demo", "discriminator": "0", "nickname": "Ana", "color": null, "isBot": false, "roles": []},
+      "attachments": [{"id": "5001", "fileName": "img.png", "fileSizeBytes": 1000, "url": "https://cdn.example/img.png"}],
+      "embeds": [],
+      "stickers": [],
+      "reactions": [],
+      "mentions": []
+    }
+  ]
+}

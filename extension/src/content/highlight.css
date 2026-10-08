@@ -1,0 +1,14 @@
+/* Colores de los datachunks. Lo inserta el service worker con chrome.scripting.insertCSS:
+   no agrega nodos a la página. ::highlight() solo admite color, fondo y decoración de texto. */
+::highlight(aleph-chunk-new) {
+  background-color: #ffd84d;
+  color: #14110a;
+}
+::highlight(aleph-chunk-sent) {
+  background-color: #1f9e86;
+  color: #ffffff;
+}
+::highlight(aleph-chunk-known) {
+  background-color: #2f5fc4;
+  color: #ffffff;
+}
