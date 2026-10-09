@@ -71,6 +71,9 @@ def _sigmoid(x: Any) -> Any:
     return 1.0 / (1.0 + np.exp(-np.clip(x, -30, 30)))
 
 
+MAX_REPORTED_SCORE = 0.99
+
+
 @dataclass
 class Analysis:
     """Resultado matricial completo; `analyze` lo resume en un MenardReport."""
@@ -107,11 +110,25 @@ class Analysis:
                                       if self.mode == "cohort" and ok.any() else 0.5)
         return self._baseline[s.name]
 
+    def confidence_limits(self, i: int, j: int) -> list[str]:
+        """Motivos por los que la confianza no puede ser alta aunque el puntaje lo sea."""
+        posts = int(min(self.corpus.n_posts[i], self.corpus.n_posts[j]))
+        fams = {s.family for s in self.signals if s.avail[i, j]}
+        limits = []
+        if posts < 30:
+            limits.append(f"la cuenta con menos actividad tiene {posts} publicaciones (se piden 30)")
+        if len(fams) < 3:
+            limits.append(f"solo hubo datos para {len(fams)} familia(s) de señales (se piden 3)")
+        if self.mode != "cohort":
+            limits.append("la comparación se hizo sin conjunto de referencia y no se pudo medir la "
+                          "rareza de los rasgos")
+        return limits
+
     def confidence(self, i: int, j: int) -> str:
         score = float(self.scores[i, j])
         posts = min(self.corpus.n_posts[i], self.corpus.n_posts[j])
         fams = {s.family for s in self.signals if s.avail[i, j]}
-        if score >= 0.85 and posts >= 30 and len(fams) >= 3 and self.mode == "cohort":
+        if score >= 0.85 and not self.confidence_limits(i, j):
             return "alta"
         if score >= 0.6 and posts >= 10 and len(fams) >= 2:
             return "media"
@@ -139,7 +156,8 @@ class Analysis:
             results.append(SignalResult(
                 name=s.name, family=s.family, score=round(float(s.score[i, j]), 4) if avail else 0.0,
                 weight=round(w + wz, 4), available=avail, explanation=expl, evidence=ev))
-        score = float(self.scores[i, j])
+        # El puntaje informado nunca es certeza: la calibración satura con pares casi idénticos.
+        score = min(float(self.scores[i, j]), MAX_REPORTED_SCORE)
         conf = self.confidence(i, j)
         return PairResult(a=self.keys[i], b=self.keys[j], score=round(score, 4), confidence=conf,
                           signals=results, summary=self._summary(i, j, score, conf, contrib))
@@ -166,11 +184,16 @@ class Analysis:
             parts.append("Señales en contra: " + ", ".join(con) + ".")
         n_av = len(contrib)
         parts.append(f"Se evaluaron {n_av} de {len(self.signals)} señales.")
-        if posts < 30:
-            parts.append(f"Evidencia limitada: la cuenta con menos actividad tiene {posts} publicaciones.")
-        if self.mode == "pairwise":
-            parts.append("Comparación sin conjunto de referencia: no se pudo estimar la rareza de "
-                         "los rasgos, por lo que la confianza no puede ser alta.")
+        limits = self.confidence_limits(i, j)
+        if limits and score >= 0.5:
+            parts.append("La confianza no llega a alta porque " + "; ".join(limits) + ".")
+        else:
+            if posts < 30:
+                parts.append(f"Evidencia limitada: la cuenta con menos actividad tiene {posts} "
+                             "publicaciones.")
+            if self.mode == "pairwise":
+                parts.append("Comparación sin conjunto de referencia: no se pudo estimar la rareza "
+                             "de los rasgos.")
         if not self.model.trained:
             parts.append("Pesos de reserva (sin calibrar).")
         parts.append("Es una hipótesis para revisión de un analista, no una identificación.")
