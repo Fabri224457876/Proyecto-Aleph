@@ -1,9 +1,11 @@
 """Inicio de sesión y gestión de usuarios."""
 
+from datetime import UTC, datetime, timedelta
+
 from fastapi import HTTPException
 from sqlalchemy import func, select
 
-from aleph.core.models import User
+from aleph.core.models import AuditEvent, User
 
 from .. import auditlog, security
 from ..deps import DB, Admin, CurrentUser, Paging, SettingsDep, page_of, paginate
@@ -15,9 +17,35 @@ auth = make_router(prefix="/auth", tags=["auth"])
 users = make_router(prefix="/users", tags=["usuarios"])
 
 
+MAX_FAILED_LOGINS = 5
+LOCKOUT_WINDOW = timedelta(minutes=15)
+
+
+def _recent_failures(session, target: str) -> int:
+    """Intentos fallidos en la ventana, contados desde el último ingreso correcto.
+
+    Se apoya en la propia auditoría: no hay un contador aparte que se pueda desincronizar.
+    """
+    last_ok = session.execute(
+        select(func.max(AuditEvent.id)).where(AuditEvent.action == "auth.login", AuditEvent.target == target)
+    ).scalar() or 0
+    cutoff = (datetime.now(UTC) - LOCKOUT_WINDOW).isoformat()
+    return session.execute(
+        select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.action == "auth.login.failed", AuditEvent.target == target,
+            AuditEvent.id > last_ok, AuditEvent.ts >= cutoff,
+        )
+    ).scalar() or 0
+
+
 @auth.post("/login", response_model=TokenOut, summary="Iniciar sesión")
 def login(body: LoginIn, session: DB, settings: SettingsDep):
     username = body.username.strip().lower()
+    if _recent_failures(session, f"user:{username[:64]}") >= MAX_FAILED_LOGINS:
+        raise HTTPException(
+            status_code=429,
+            detail="Demasiados intentos fallidos. Esperá 15 minutos antes de volver a intentar.",
+        )
     user = session.execute(select(User).where(func.lower(User.username) == username)).scalars().first()
     if user is None:
         security.burn_verification(body.password)

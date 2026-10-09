@@ -139,3 +139,30 @@ def test_bootstrap_creates_admin_without_default_password(db, fast_hashing, monk
     assert bootstrap.main(["--username", "alguien"]) == 2
     assert "Falta la contraseña" in capsys.readouterr().err
     assert "ALEPH_ADMIN_PASSWORD" in inspect.getsource(bootstrap)
+
+
+def test_login_locks_after_repeated_failures_and_success_resets(client, users, db, synth):
+    bad = {"username": "analyst", "password": "otra-clave-larga"}
+    good = {"username": "analyst", "password": synth.password}
+    for _ in range(4):
+        assert client.post("/api/auth/login", json=bad).status_code == 401
+    # un ingreso correcto antes del quinto fallo reinicia la cuenta
+    assert client.post("/api/auth/login", json=good).status_code == 200
+    for _ in range(5):
+        assert client.post("/api/auth/login", json=bad).status_code == 401
+    locked = client.post("/api/auth/login", json=good)
+    assert locked.status_code == 429 and "15 minutos" in locked.json()["detail"]
+    # el bloqueo es por usuario: los demás siguen entrando
+    assert client.post("/api/auth/login", json={"username": "auditor", "password": synth.password}).status_code == 200
+
+    # pasada la ventana, vuelve a entrar
+    from datetime import timedelta
+
+    from aleph.api.routers import auth as auth_router
+
+    original = auth_router.LOCKOUT_WINDOW
+    auth_router.LOCKOUT_WINDOW = timedelta(seconds=-1)
+    try:
+        assert client.post("/api/auth/login", json=good).status_code == 200
+    finally:
+        auth_router.LOCKOUT_WINDOW = original
