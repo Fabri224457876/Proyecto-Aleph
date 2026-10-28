@@ -210,6 +210,29 @@ class CaseDetail(CaseOut):
     counts: dict[str, int] = Field(default_factory=dict)
 
 
+# ---------------------------------------------------------------- miembros del caso
+
+class MemberAddIn(BaseModel):
+    user_id: int | None = Field(default=None, description="Id del usuario a agregar")
+    username: str | None = Field(default=None, max_length=64, description="O bien, su nombre de usuario")
+
+    @model_validator(mode="after")
+    def _one_key(self):
+        if (self.user_id is None) == (self.username is None):
+            raise ValueError("Indicá el id o el nombre de usuario, pero no los dos.")
+        if self.username is not None and not self.username.strip():
+            raise ValueError("El nombre de usuario está vacío.")
+        return self
+
+
+class CaseMemberOut(BaseModel):
+    user_id: int
+    username: str
+    role: str
+    added_by: int | None
+    added_at: UTCDatetime
+
+
 # ---------------------------------------------------------------- fuentes
 
 class SourceCreate(BaseModel):

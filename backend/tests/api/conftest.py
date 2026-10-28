@@ -1,6 +1,7 @@
 """Fixtures de la API: base SQLite en memoria, sin red, con el motor MENARD simulado."""
 
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 
 import pytest
 from argon2 import PasswordHasher
@@ -92,6 +93,22 @@ def auth(users, settings):
         return {"Authorization": f"Bearer {token}"}
 
     return headers
+
+
+@pytest.fixture
+def make_user(session_factory, settings):
+    """make_user("nombre", "analyst") -> usuario nuevo, con su id y sus encabezados de autorización."""
+
+    def create(username: str, role: str = "analyst", *, active: bool = True) -> SimpleNamespace:
+        with session_factory() as session:
+            user = User(username=username, password_hash=security.hash_password(PASSWORD), role=role, active=active)
+            session.add(user)
+            session.commit()
+            user_id = user.id
+        token, _ = security.create_token(user_id, role, settings)
+        return SimpleNamespace(id=user_id, headers={"Authorization": f"Bearer {token}"})
+
+    return create
 
 
 @pytest.fixture

@@ -48,6 +48,7 @@ from aleph.core.models import (
     AccountLink,
     AuditEvent,
     Case,
+    CaseMember,
     CaseSection,
     Entity,
     Finding,
@@ -346,6 +347,7 @@ def seed(session: Session, *, data_dir: str | Path, demo_password: str | None = 
                 tlp="amber", created_by=analyst.id)
     session.add(case)
     session.flush()
+    session.add(CaseMember(case_id=case.id, user_id=analyst.id, added_by=analyst.id))  # como POST /cases
     sections, _ = ensure_default_sections(session, case.id)
     auditlog.record(session, "case.create", user_id=analyst.id, case_id=case.id, target=f"case:{case.id}",
                     detail={"name": case.name, "tlp": case.tlp, "legal_basis": case.legal_basis,

@@ -10,7 +10,17 @@ from aleph.core import audit as core_audit
 from aleph.core.models import AuditEvent, Job
 
 from .. import auditlog
-from ..deps import DB, AnyUser, Auditor, Paging, SettingsDep, page_of, paginate
+from ..deps import (
+    DB,
+    AnyUser,
+    Auditor,
+    Paging,
+    SettingsDep,
+    can_see_case,
+    page_of,
+    paginate,
+    scope_to_user,
+)
 from ..routing import make_router
 from ..schemas import AuditEventOut, AuditVerifyOut, ConnectorOut, JobOut, Message, Page
 from ..services.util import as_utc
@@ -20,14 +30,14 @@ audit = make_router(prefix="/audit", tags=["auditoría"])
 connectors = make_router(prefix="/connectors", tags=["conectores"])
 
 
-@jobs.get("", response_model=Page[JobOut], summary="Listar trabajos")
+@jobs.get("", response_model=Page[JobOut], summary="Listar trabajos (solo de los casos que ves)")
 def list_jobs(
     session: DB, user: AnyUser, page: Paging,
     case_id: Annotated[int | None, Query()] = None,
     kind: Annotated[str | None, Query()] = None,
     status: Annotated[Literal["queued", "running", "done", "failed"] | None, Query()] = None,
 ):
-    stmt = select(Job).order_by(Job.id.desc())
+    stmt = scope_to_user(select(Job).order_by(Job.id.desc()), user, Job.case_id)
     if case_id is not None:
         stmt = stmt.where(Job.case_id == case_id)
     if kind:
@@ -38,10 +48,11 @@ def list_jobs(
     return page_of(items, total, page)
 
 
-@jobs.get("/{job_id}", response_model=JobOut, summary="Consultar un trabajo")
+@jobs.get("/{job_id}", response_model=JobOut, summary="Consultar un trabajo (solo de los casos que ves)")
 def get_job(job_id: int, session: DB, user: AnyUser):
     job = session.get(Job, job_id)
-    if job is None:
+    # Un trabajo de un caso ajeno responde igual que uno inexistente. Sin caso, solo admin y auditor
+    if job is None or not can_see_case(session, job.case_id, user):
         raise HTTPException(status_code=404, detail=f"El trabajo {job_id} no existe.")
     return job
 

@@ -11,6 +11,7 @@ from . import (
     funes,
     graph,
     lens,
+    members,
     menard,
     sources,
     system,
@@ -20,6 +21,7 @@ from . import (
 router = make_router()
 router.include_router(auth.router)
 router.include_router(cases.router)
+router.include_router(members.router)
 router.include_router(graph.router)
 router.include_router(sources.router)
 router.include_router(accounts.router)

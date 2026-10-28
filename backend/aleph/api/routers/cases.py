@@ -10,6 +10,7 @@ from aleph.core.models import (
     Account,
     AccountLink,
     Case,
+    CaseMember,
     CaseSection,
     Entity,
     Finding,
@@ -32,6 +33,7 @@ from ..deps import (
     Writer,
     page_of,
     paginate,
+    scope_to_user,
 )
 from ..presenters import accounts_out, links_out, source_out
 from ..routing import make_router
@@ -82,11 +84,13 @@ def create_case(body: CaseCreate, session: DB, user: Writer):
                 tlp=body.tlp, created_by=user.id)
     session.add(case)
     session.flush()
+    # Quien abre el caso queda como miembro: sin esta fila, un analista no lo vería (need-to-know)
+    session.add(CaseMember(case_id=case.id, user_id=user.id, added_by=user.id))
     sections, _ = ensure_default_sections(session, case.id)
     auditlog.record(
         session, "case.create", user_id=user.id, case_id=case.id, target=f"case:{case.id}",
         detail={"name": case.name, "tlp": case.tlp, "legal_basis": case.legal_basis,
-                "sections": [s.name for s in sections]},
+                "sections": [s.name for s in sections], "member_ids": [user.id]},
     )
     session.commit()
     return case
@@ -99,7 +103,7 @@ def list_cases(
     tlp: Annotated[str | None, Query()] = None,
     q: Annotated[str | None, Query(description="Texto en nombre o descripción")] = None,
 ):
-    stmt = select(Case).order_by(Case.id.desc())
+    stmt = scope_to_user(select(Case).order_by(Case.id.desc()), user, Case.id)
     if status:
         stmt = stmt.where(Case.status == status)
     if tlp:
@@ -169,8 +173,9 @@ def delete_case(case: ManageCase, session: DB, admin: Admin):
             )
     auditlog.record(session, "case.delete", user_id=admin.id, case_id=case.id, target=f"case:{case.id}",
                     detail={"name": case.name, "legal_basis": case.legal_basis})
-    for section in session.execute(select(CaseSection).where(CaseSection.case_id == case.id)).scalars():
-        session.delete(section)
+    for model in (CaseSection, CaseMember):  # las filas que cuelgan del caso se van con él
+        for row in session.execute(select(model).where(model.case_id == case.id)).scalars():
+            session.delete(row)
     session.flush()
     session.delete(case)
     session.commit()

@@ -1,4 +1,4 @@
-"""Dependencias de FastAPI: sesión, usuario actual, roles, caso y paginación."""
+"""Dependencias de FastAPI: sesión, usuario actual, roles, acceso por caso y paginación."""
 
 from typing import Annotated
 
@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from aleph.core.config import Settings, get_settings
 from aleph.core.db import get_session
-from aleph.core.models import Case, User
+from aleph.core.models import Case, CaseMember, User
 
 from . import auditlog
 from .schemas import ROLES
@@ -77,24 +77,56 @@ Admin = Annotated[User, Depends(require_role("admin"))]
 Auditor = Annotated[User, Depends(require_role(*AUDITORS))]
 
 
-def _load_case(session: Session, case_id: int) -> Case:
+# ---------------------------------------------------------------- acceso por caso (need-to-know)
+#
+# Único punto de control: todo endpoint bajo /cases/{case_id} recibe el caso por ReadCase,
+# WriteCase, ManageCase o ManageMembers, y todos pasan por `_load_case`. Admin y auditor ven
+# todos los casos; un analista ve solo aquellos donde es miembro. Para un analista que no es
+# miembro, el caso responde igual que si no existiera (mismo 404).
+
+SEES_ALL_CASES = AUDITORS
+
+
+def sees_all_cases(user: User) -> bool:
+    return user.role in SEES_ALL_CASES
+
+
+def can_see_case(session: Session, case_id: int | None, user: User) -> bool:
+    """Si el usuario ve el caso. Sin caso (`None`), solo lo ven admin y auditor."""
+    if sees_all_cases(user):
+        return True
+    if case_id is None:
+        return False
+    return session.execute(
+        select(CaseMember.id).where(CaseMember.case_id == case_id, CaseMember.user_id == user.id)
+    ).first() is not None
+
+
+def scope_to_user(stmt, user: User, case_column):
+    """Limita una consulta a los casos que el usuario ve. Sirve para listados y conteos."""
+    if sees_all_cases(user):
+        return stmt
+    return stmt.where(case_column.in_(select(CaseMember.case_id).where(CaseMember.user_id == user.id)))
+
+
+def _load_case(session: Session, case_id: int, user: User) -> Case:
     case = session.get(Case, case_id)
-    if case is None:
+    if case is None or not can_see_case(session, case_id, user):
         raise HTTPException(status_code=404, detail=f"El caso {case_id} no existe.")
     return case
 
 
 def readable_case(case_id: int, session: DB, user: AnyUser) -> Case:
-    return _load_case(session, case_id)
+    return _load_case(session, case_id, user)
 
 
 def managed_case(case_id: int, session: DB, user: Writer) -> Case:
     """Caso para un rol que escribe, sin importar su estado (cerrar, archivar, reabrir)."""
-    return _load_case(session, case_id)
+    return _load_case(session, case_id, user)
 
 
 def writable_case(case_id: int, session: DB, user: Writer) -> Case:
-    case = _load_case(session, case_id)
+    case = _load_case(session, case_id, user)
     if case.status != "open":
         raise HTTPException(
             status_code=409, detail=f"El caso está {_STATUS_ES.get(case.status, case.status)}: es de solo lectura."
@@ -107,6 +139,17 @@ _STATUS_ES = {"closed": "cerrado", "archived": "archivado"}
 ReadCase = Annotated[Case, Depends(readable_case)]
 WriteCase = Annotated[Case, Depends(writable_case)]
 ManageCase = Annotated[Case, Depends(managed_case)]
+
+
+def members_case(case: ReadCase, user: Writer) -> Case:
+    """Caso para gestionar quién tiene acceso: admin o analista miembro. El auditor lo ve, no lo gestiona.
+
+    El orden importa: primero el caso (404 para un analista que no es miembro), después el rol.
+    """
+    return case
+
+
+ManageMembers = Annotated[Case, Depends(members_case)]
 
 
 class PageParams:
