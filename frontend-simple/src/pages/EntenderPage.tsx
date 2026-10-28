@@ -9,14 +9,18 @@ import { PeopleView } from "./entender/PeopleView";
 import { TimelineView } from "./entender/TimelineView";
 import { ConnectionsView } from "./entender/ConnectionsView";
 import { ReportView } from "./entender/ReportView";
+import { AskView } from "./entender/AskView";
+import { TlonView } from "./entender/TlonView";
 
-type View = "expediente" | "personas" | "tiempo" | "conexiones" | "informe";
+type View = "expediente" | "personas" | "tiempo" | "conexiones" | "preguntar" | "tlon" | "informe";
 
 const VIEWS: Array<{ key: View; label: string }> = [
   { key: "expediente", label: "Expediente" },
   { key: "personas", label: "Personas y cuentas" },
   { key: "tiempo", label: "Línea de tiempo" },
   { key: "conexiones", label: "Conexiones" },
+  { key: "preguntar", label: "Preguntarle al caso" },
+  { key: "tlon", label: "Vínculos posibles" },
   { key: "informe", label: "Informe y exportar" },
 ];
 
@@ -118,6 +122,8 @@ export function EntenderPage() {
       {view === "personas" && <PeopleView />}
       {view === "tiempo" && <TimelineView />}
       {view === "conexiones" && <ConnectionsView />}
+      {view === "preguntar" && <AskView />}
+      {view === "tlon" && <TlonView />}
       {view === "informe" && <ReportView />}
 
       {ctx.pending > 0 && view !== "informe" && (

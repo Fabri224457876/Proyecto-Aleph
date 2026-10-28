@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     llm_base_url: str = "http://127.0.0.1:4000/v1"
     llm_api_key: str = ""
     llm_model: str = "local"
+    # Solo para servidores que lo aceptan (Ollama, vLLM): "none" apaga el razonamiento de qwen3/deepseek
+    # y responde en segundos. Vacío = no se envía.
+    llm_reasoning_effort: str = ""
     embed_base_url: str = "http://127.0.0.1:8081/v1"
     embed_api_key: str = ""
     embed_model: str = "bge-m3"

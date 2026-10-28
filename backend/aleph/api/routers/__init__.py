@@ -13,8 +13,10 @@ from . import (
     lens,
     members,
     menard,
+    search,
     sources,
     system,
+    tlon,
     tools,
 )
 
@@ -38,5 +40,8 @@ router.include_router(exchange.router)
 router.include_router(cti.router)
 router.include_router(cti.attack)
 router.include_router(funes.router)
+# Búsqueda, preguntas al caso y TLÖN
+router.include_router(search.router)
+router.include_router(tlon.router)
 
 __all__ = ["router"]

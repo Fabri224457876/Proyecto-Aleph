@@ -107,6 +107,7 @@ def make_client(settings, http: httpx.AsyncClient | None = None) -> FunesClient:
         return FunesClient(
             llm_base_url=url, llm_model=settings.llm_model, llm_api_key=settings.llm_api_key or "",
             http=http, timeout=LLM_TIMEOUT, max_retries=1, backoff=0.5,
+            reasoning_effort=getattr(settings, "llm_reasoning_effort", "") or "",
         )
     except NonLocalEndpointError as exc:
         raise EngineUnavailable(f"El LLM de FUNES no es un endpoint de la red propia: {exc}") from exc

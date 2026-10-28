@@ -1,6 +1,6 @@
 # Cobertura de rutas de la API en la consola simple
 
-Fuente: `docs/openapi.json` (el contrato). Operaciones en el contrato: **81**. Cubiertas desde algún lugar de la consola simple: **81**. Sin interfaz: **0**.
+Fuente: `docs/openapi.json` (el contrato). Operaciones en el contrato: **86**. Cubiertas desde algún lugar de la consola simple: **86**. Sin interfaz: **0**.
 
 Todas las rutas se usan desde la navegación normal o desde "Más opciones", que es donde van las funciones avanzadas. Lo que no tiene un botón real en la consola no figura como cubierto.
 
@@ -87,6 +87,11 @@ Todas las rutas se usan desde la navegación normal o desde "Más opciones", que
 | POST | `/api/cases/{case_id}/funes/ner` | Extraer entidades y relaciones de un texto o una fuente (propuestas) | Reunir: extraer personas, organizaciones y relaciones con la IA local |
 | POST | `/api/cases/{case_id}/funes/contradictions` | Detectar contradicciones espacio-temporales y de valores entre fuentes | Revisar: buscar contradicciones entre fuentes |
 | POST | `/api/cases/{case_id}/funes/report` | Borrador de informe de inteligencia en Markdown (queda auditado) | Entender y contar: Informe y exportar, redactar borrador |
+| GET | `/api/search` | Buscar en los casos que ves (texto y significado) | Barra de búsqueda de arriba y página Buscar |
+| POST | `/api/cases/{case_id}/ask` | Preguntarle al caso: FUNES responde con los datos del caso y los cita | Entender y contar: Preguntarle al caso |
+| GET | `/api/cases/{case_id}/lookup` | Búsqueda OSINT externa: qué fuentes públicas aplican a un dato | Buscar (dentro de un caso): Buscar afuera, en fuentes públicas |
+| POST | `/api/cases/{case_id}/tlon/run` | Entrenar el modelo del caso y proponer vínculos faltantes | Entender y contar: Vínculos posibles |
+| GET | `/api/cases/{case_id}/tlon/latest` | Resultado de la última corrida de TLÖN | Entender y contar: Vínculos posibles (al abrir) |
 
 ## Limitaciones conocidas de la API para esta interfaz
 

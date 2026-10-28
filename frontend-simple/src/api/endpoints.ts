@@ -44,6 +44,11 @@ import type {
   ToolOut,
   ToolRunOut,
   IngestSummary,
+  AskOut,
+  GlobalSearchOut,
+  LookupAction,
+  LookupPlan,
+  TlonRunOut,
 } from "./contract";
 import { buildQuery } from "./client";
 
@@ -468,3 +473,28 @@ export const importCapture = (caseId: number, body: unknown) =>
 
 export const lookupHandles = (caseId: number, platform: string, handles: string[]) =>
   api<LookupOut>(`/api/cases/${caseId}/captures/lookup`, { method: "POST", body: { platform, handles } });
+
+// ---------------------------------------------------------------- búsqueda, preguntas al caso y TLÖN
+
+export const search = (q: string, opts: { caseId?: number; semantic?: boolean; kinds?: string[]; limit?: number } = {}) =>
+  api<GlobalSearchOut>("/api/search", {
+    query: { q, case_id: opts.caseId, semantic: opts.semantic ? "true" : undefined, kind: opts.kinds, limit: opts.limit },
+  });
+
+export const askCase = (caseId: number, question: string) =>
+  api<AskOut>(`/api/cases/${caseId}/ask`, { method: "POST", body: { question } });
+
+export const lookupPlan = (caseId: number, q: string) =>
+  api<LookupPlan>(`/api/cases/${caseId}/lookup`, { query: { q } });
+
+/** Corre una acción del plan tal como la armó la API (mismo endpoint que usar el conector o la herramienta a mano). */
+export const runLookupAction = (action: LookupAction) => {
+  const form = new FormData();
+  for (const [key, value] of Object.entries(action.form)) form.append(key, value);
+  return api<CollectOut | ToolRunOut>(`/api${action.path}`, { method: "POST", form });
+};
+
+export const tlonRun = (caseId: number, body: { use_llm?: boolean; max_hypotheses?: number; min_percentile?: number } = {}) =>
+  api<TlonRunOut>(`/api/cases/${caseId}/tlon/run`, { method: "POST", body });
+
+export const tlonLatest = (caseId: number) => api<TlonRunOut>(`/api/cases/${caseId}/tlon/latest`);

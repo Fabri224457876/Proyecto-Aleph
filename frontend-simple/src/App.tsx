@@ -16,6 +16,7 @@ import { ActividadPage } from "./pages/ActividadPage";
 import { UsuariosPage } from "./pages/UsuariosPage";
 import { CuentaPage } from "./pages/CuentaPage";
 import { CaseIndex } from "./pages/CaseIndex";
+import { BuscarPage } from "./pages/BuscarPage";
 import { Link } from "./lib/router";
 
 type Params = Record<string, string>;
@@ -68,6 +69,7 @@ const ROUTES: Array<[string, (params: Params) => ReactNode]> = [
       </CaseLayout>
     ),
   ],
+  ["/buscar", () => <BuscarPage />],
   ["/actividad", () => <ActividadPage />],
   ["/usuarios", () => <UsuariosPage />],
   ["/cuenta", () => <CuentaPage />],

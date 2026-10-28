@@ -8820,6 +8820,553 @@
           }
         }
       }
+    },
+    "/api/search": {
+      "get": {
+        "tags": [
+          "búsqueda"
+        ],
+        "summary": "Buscar en los casos que ves (texto y significado)",
+        "operationId": "search_api_search_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 300,
+              "description": "Qué buscar",
+              "title": "Q"
+            },
+            "description": "Qué buscar"
+          },
+          {
+            "name": "case_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Solo en este caso",
+              "title": "Case Id"
+            },
+            "description": "Solo en este caso"
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "case",
+                      "entity",
+                      "account",
+                      "post",
+                      "source",
+                      "finding",
+                      "link"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tipos a incluir (por defecto, todos)",
+              "title": "Kind"
+            },
+            "description": "Tipos a incluir (por defecto, todos)"
+          },
+          {
+            "name": "semantic",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Reordenar por significado con embeddings locales",
+              "default": false,
+              "title": "Semantic"
+            },
+            "description": "Reordenar por significado con embeddings locales"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 30,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GlobalSearchOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/ask": {
+      "post": {
+        "tags": [
+          "búsqueda"
+        ],
+        "summary": "Preguntarle al caso: FUNES responde con los datos del caso y los cita",
+        "operationId": "ask_api_cases__case_id__ask_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El LLM no está configurado o no responde"
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/lookup": {
+      "get": {
+        "tags": [
+          "búsqueda"
+        ],
+        "summary": "Búsqueda OSINT externa: qué fuentes públicas aplican a un dato",
+        "operationId": "lookup_api_cases__case_id__lookup_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048,
+              "description": "Usuario, correo, dominio, URL, IP…",
+              "title": "Q"
+            },
+            "description": "Usuario, correo, dominio, URL, IP…"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LookupPlan"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/tlon/run": {
+      "post": {
+        "tags": [
+          "TLÖN"
+        ],
+        "summary": "Entrenar el modelo del caso y proponer vínculos faltantes (quedan como propuestas)",
+        "operationId": "run_api_cases__case_id__tlon_run_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TlonRunIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TlonRunOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/tlon/latest": {
+      "get": {
+        "tags": [
+          "TLÖN"
+        ],
+        "summary": "Resultado de la última corrida de TLÖN",
+        "operationId": "latest_api_cases__case_id__tlon_latest_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TlonRunOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -9108,6 +9655,161 @@
           "handle"
         ],
         "title": "AccountRecord"
+      },
+      "Action": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "connector",
+              "tool"
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method",
+            "default": "POST"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "description": "Ruta relativa a /api, ya con el caso"
+          },
+          "form": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Form",
+            "description": "Campos del formulario a enviar"
+          },
+          "network": {
+            "type": "boolean",
+            "title": "Network",
+            "default": true
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "default": true
+          },
+          "unavailable_reason": {
+            "type": "string",
+            "title": "Unavailable Reason",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "kind",
+          "name",
+          "path",
+          "form"
+        ],
+        "title": "Action"
+      },
+      "AskIn": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 3,
+            "title": "Question"
+          },
+          "semantic": {
+            "type": "boolean",
+            "title": "Semantic",
+            "description": "Recuperar también por significado",
+            "default": true
+          },
+          "k": {
+            "type": "integer",
+            "maximum": 30.0,
+            "minimum": 3.0,
+            "title": "K",
+            "description": "Fragmentos que se le pasan al modelo",
+            "default": 12
+          }
+        },
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "AskIn"
+      },
+      "AskOut": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          },
+          "llm_status": {
+            "type": "string",
+            "title": "Llm Status"
+          },
+          "retrieval": {
+            "type": "string",
+            "title": "Retrieval",
+            "description": "Cómo se recuperó: semántica usada o solo texto"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/HitOut"
+            },
+            "type": "array",
+            "title": "Citations",
+            "description": "Fragmentos citados en la respuesta"
+          },
+          "context": {
+            "items": {
+              "$ref": "#/components/schemas/HitOut"
+            },
+            "type": "array",
+            "title": "Context",
+            "description": "Todos los fragmentos que vio el modelo"
+          },
+          "invalid_citations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Invalid Citations"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer",
+          "llm_status",
+          "retrieval",
+          "citations",
+          "context"
+        ],
+        "title": "AskOut"
       },
       "AuditEventOut": {
         "properties": {
@@ -10968,6 +11670,40 @@
         "type": "object",
         "title": "FindingUpdate"
       },
+      "GlobalSearchOut": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "semantic_status": {
+            "type": "string",
+            "title": "Semantic Status",
+            "description": "usado | no_configurado | no_responde | omitido"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/HitOut"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query",
+          "semantic_status",
+          "items"
+        ],
+        "title": "GlobalSearchOut"
+      },
       "GraphEdge": {
         "properties": {
           "id": {
@@ -11200,6 +11936,186 @@
         },
         "type": "object",
         "title": "HandleLookupResponse"
+      },
+      "HitOut": {
+        "properties": {
+          "ref": {
+            "type": "string",
+            "title": "Ref",
+            "description": "Id corto para citar: E entidad, A cuenta, P publicación, S fuente, F hallazgo, H hipótesis de MENARD, K caso"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "case_id": {
+            "type": "integer",
+            "title": "Case Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "snippet": {
+            "type": "string",
+            "title": "Snippet"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "lexical": {
+            "type": "number",
+            "title": "Lexical"
+          },
+          "semantic": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Semantic"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": ""
+          },
+          "extra": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Extra"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ref",
+          "kind",
+          "id",
+          "case_id",
+          "title",
+          "snippet",
+          "score",
+          "lexical"
+        ],
+        "title": "HitOut"
+      },
+      "HypothesisEvidence": {
+        "properties": {
+          "similar_neighbors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Similar Neighbors",
+            "description": "Vecinos del origen que el modelo ve parecidos al destino"
+          },
+          "common_neighbors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Common Neighbors"
+          },
+          "shared_attributes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Shared Attributes"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "HypothesisEvidence"
+      },
+      "HypothesisOut": {
+        "properties": {
+          "src": {
+            "type": "integer",
+            "title": "Src"
+          },
+          "dst": {
+            "type": "integer",
+            "title": "Dst"
+          },
+          "src_label": {
+            "type": "string",
+            "title": "Src Label"
+          },
+          "dst_label": {
+            "type": "string",
+            "title": "Dst Label"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Tipo de relación que el modelo predice"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score",
+            "description": "Similitud coseno entre la predicción y el destino (−1 a 1)"
+          },
+          "percentile": {
+            "type": "number",
+            "title": "Percentile",
+            "description": "Qué proporción de los vínculos reales del mismo tipo puntúa por debajo (0 a 1)"
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/HypothesisEvidence"
+          },
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          },
+          "relation_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relation Id",
+            "description": "Relación propuesta creada (None si se descartó)"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Review"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "src",
+          "dst",
+          "src_label",
+          "dst_label",
+          "type",
+          "score",
+          "percentile",
+          "evidence",
+          "ref"
+        ],
+        "title": "HypothesisOut"
       },
       "IngestSummary": {
         "properties": {
@@ -11607,6 +12523,47 @@
           "password"
         ],
         "title": "LoginIn"
+      },
+      "LookupPlan": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "kind_label": {
+            "type": "string",
+            "title": "Kind Label"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            },
+            "type": "array",
+            "title": "Actions"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "query",
+          "kind",
+          "kind_label",
+          "value",
+          "actions"
+        ],
+        "title": "LookupPlan"
       },
       "MemberAddIn": {
         "properties": {
@@ -12981,6 +13938,39 @@
         ],
         "title": "ReportOut"
       },
+      "Review": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "veredicto": {
+            "type": "string",
+            "enum": [
+              "plausible",
+              "dudosa",
+              "descartable"
+            ],
+            "title": "Veredicto"
+          },
+          "razon": {
+            "type": "string",
+            "title": "Razon",
+            "default": ""
+          },
+          "verificar": {
+            "type": "string",
+            "title": "Verificar",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "veredicto"
+        ],
+        "title": "Review"
+      },
       "ReviewIn": {
         "properties": {
           "decision": {
@@ -13292,6 +14282,26 @@
           "created_by"
         ],
         "title": "SourceOut"
+      },
+      "Statement": {
+        "properties": {
+          "texto": {
+            "type": "string",
+            "title": "Texto"
+          },
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "texto"
+        ],
+        "title": "Statement"
       },
       "StixImportOut": {
         "properties": {
@@ -13685,6 +14695,143 @@
           "offset"
         ],
         "title": "TimelineOut"
+      },
+      "TlonRunIn": {
+        "properties": {
+          "use_llm": {
+            "type": "boolean",
+            "title": "Use Llm",
+            "description": "Que FUNES revise y explique las hipótesis",
+            "default": true
+          },
+          "use_embeddings": {
+            "type": "boolean",
+            "title": "Use Embeddings",
+            "description": "Describir las entidades con embeddings locales",
+            "default": true
+          },
+          "include_proposed": {
+            "type": "boolean",
+            "title": "Include Proposed",
+            "description": "Aprender también de lo propuesto (con menos peso)",
+            "default": true
+          },
+          "max_hypotheses": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Max Hypotheses",
+            "default": 12
+          },
+          "min_percentile": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Min Percentile",
+            "default": 0.5
+          },
+          "epochs": {
+            "type": "integer",
+            "maximum": 3000.0,
+            "minimum": 10.0,
+            "title": "Epochs",
+            "default": 300
+          }
+        },
+        "type": "object",
+        "title": "TlonRunIn"
+      },
+      "TlonRunOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": ""
+          },
+          "nodes": {
+            "type": "integer",
+            "title": "Nodes"
+          },
+          "edges": {
+            "type": "integer",
+            "title": "Edges"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality"
+          },
+          "feature_source": {
+            "type": "string",
+            "title": "Feature Source",
+            "default": ""
+          },
+          "llm_status": {
+            "type": "string",
+            "title": "Llm Status"
+          },
+          "embeddings_status": {
+            "type": "string",
+            "title": "Embeddings Status"
+          },
+          "hypotheses": {
+            "items": {
+              "$ref": "#/components/schemas/HypothesisOut"
+            },
+            "type": "array",
+            "title": "Hypotheses"
+          },
+          "lectura": {
+            "items": {
+              "$ref": "#/components/schemas/Statement"
+            },
+            "type": "array",
+            "title": "Lectura"
+          },
+          "created_relations": {
+            "type": "integer",
+            "title": "Created Relations",
+            "default": 0
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "nodes",
+          "edges",
+          "llm_status",
+          "embeddings_status"
+        ],
+        "title": "TlonRunOut"
       },
       "TokenOut": {
         "properties": {

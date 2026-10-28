@@ -44,7 +44,7 @@ class Source(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     case_id: Mapped[int] = mapped_column(ForeignKey("cases.id"), index=True)
-    kind: Mapped[str] = mapped_column(String(32))  # connector | upload | manual | funes | menard | enrichment
+    kind: Mapped[str] = mapped_column(String(32))  # connector | upload | manual | funes | menard | enrichment | tlon
     connector: Mapped[str] = mapped_column(String(64), default="")
     reference: Mapped[str] = mapped_column(Text, default="")  # URL, nombre de archivo, consulta
     # Admiralty Code: fiabilidad de la fuente (A-F) y credibilidad del dato (1-6)

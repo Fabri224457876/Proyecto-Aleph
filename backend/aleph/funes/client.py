@@ -143,6 +143,7 @@ class FunesClient:
         max_retries: int = 2,
         backoff: float = 1.0,
         allow_external: bool = False,
+        reasoning_effort: str = "",
         sleep: Callable[[float], Awaitable[Any]] = asyncio.sleep,
     ):
         if not allow_external:
@@ -151,6 +152,7 @@ class FunesClient:
                 ensure_local_url(embed_base_url)
         self.llm_base_url = llm_base_url.rstrip("/")
         self.llm_model = llm_model
+        self.reasoning_effort = reasoning_effort.strip()
         self._llm_api_key = llm_api_key
         self.embed_base_url = embed_base_url.rstrip("/")
         self.embed_model = embed_model
@@ -179,6 +181,7 @@ class FunesClient:
             embed_base_url=settings.embed_base_url,
             embed_model=settings.embed_model,
             embed_api_key=settings.embed_api_key,
+            reasoning_effort=getattr(settings, "llm_reasoning_effort", "") or "",
             **kwargs,
         )
 
@@ -258,6 +261,8 @@ class FunesClient:
             }
             if max_tokens is not None:
                 payload["max_tokens"] = max_tokens
+            if self.reasoning_effort:
+                payload["reasoning_effort"] = self.reasoning_effort
             response_format = self._response_format(level, json_schema, schema_name)
             if response_format:
                 payload["response_format"] = response_format

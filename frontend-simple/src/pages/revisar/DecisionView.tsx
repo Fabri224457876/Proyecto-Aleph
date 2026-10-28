@@ -231,12 +231,41 @@ function RelationBody({ relation }: { relation: RelationOut }) {
         <Chip>{relationLabel(relation.type)}</Chip>
         <Chip>{pct(relation.confidence)} de confianza</Chip>
       </div>
+      {relation.props?.motor === "tlon" && <TlonEvidence props={relation.props} />}
       {relation.source_id === null ? (
         <p className="small muted">Sin fuente registrada.</p>
       ) : (
         <p className="small muted">Fuente {relation.source_id}.</p>
       )}
     </div>
+  );
+}
+
+/** Evidencia de una hipótesis de TLÖN y la revisión de FUNES, guardadas en las props de la relación. */
+function TlonEvidence({ props }: { props: Record<string, unknown> }) {
+  const funes = (props.funes ?? null) as { veredicto?: string; razon?: string; verificar?: string } | null;
+  const tone = funes?.veredicto === "plausible" ? "ok" : funes?.veredicto === "descartable" ? "bad" : "warn";
+  return (
+    <section className="stack" aria-labelledby="tlon">
+      <h3 id="tlon">Por qué lo propone TLÖN</h3>
+      {typeof props.explicacion === "string" && <p>{props.explicacion}</p>}
+      {funes ? (
+        <div className="stack small">
+          <div className="row">
+            <Chip tone={tone}>FUNES: {funes.veredicto}</Chip>
+          </div>
+          {funes.razon && <p>{funes.razon}</p>}
+          {funes.verificar && (
+            <p>
+              <strong>Para verificar:</strong> {funes.verificar}
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="small muted">Sin revisión del modelo de lenguaje.</p>
+      )}
+      <p className="small muted">Es un patrón aprendido del propio caso, no un dato de una fuente: confirmalo solo si lo verificás.</p>
+    </section>
   );
 }
 

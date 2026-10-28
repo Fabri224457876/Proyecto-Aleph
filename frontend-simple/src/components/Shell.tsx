@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useAuth } from "../lib/auth";
-import { Link, navigate } from "../lib/router";
+import { Link, navigate, useLocation } from "../lib/router";
 import { applyTheme, readTheme, type Theme } from "../lib/theme";
 import { ROLE_LABEL } from "../lib/labels";
 import * as endpoints from "../api/endpoints";
@@ -11,6 +11,20 @@ export function Shell({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const [theme, setTheme] = useState<Theme>(readTheme);
   const [api, setApi] = useState<ApiState>("checking");
+  const [query, setQuery] = useState("");
+  const location = useLocation();
+  // Dentro de un caso, la búsqueda arranca limitada a ese caso.
+  const inCase = /^\/casos\/(\d+)/.exec(location.pathname)?.[1];
+
+  function search(e: FormEvent) {
+    e.preventDefault();
+    const q = query.trim();
+    if (q.length < 2) return;
+    const params = new URLSearchParams({ q });
+    if (inCase) params.set("caso", inCase);
+    navigate(`/buscar?${params.toString()}`);
+    setQuery("");
+  }
 
   useEffect(() => {
     applyTheme(theme);
@@ -41,6 +55,16 @@ export function Shell({ children }: { children: ReactNode }) {
             <span className="brand-name">Aleph</span>
             <span className="brand-sub">Investigación de fuentes abiertas</span>
           </Link>
+          <form className="topsearch" role="search" onSubmit={search}>
+            <input
+              className="input"
+              type="search"
+              aria-label={inCase ? "Buscar en este caso" : "Buscar en mis casos"}
+              placeholder={inCase ? "Buscar en este caso…" : "Buscar en mis casos…"}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </form>
           <nav className="topnav" aria-label="Principal">
             <Link to="/">Mis casos</Link>
             {auth.canAudit && <Link to="/actividad">Registro de actividad</Link>}

@@ -86,6 +86,32 @@ INFRA_RELATIONS: list[tuple[str, str, str, dict, float]] = [
     ("d2", "ip2", "resolves_to", {}, 0.7),
     ("u1", "d1", "related_to", {}, 0.9),
 ]
+
+# Kits espejo de la campaña (todo ficticio, rangos de documentación RFC 5737). Repiten un mismo
+# patrón: la URL apunta al dominio, el dominio resuelve a una IP, la URL se aloja en esa IP y el
+# dominio se registró con un correo. Al kit 6 le falta "alojada en": es lo que TLÖN debería
+# proponer al aprender el patrón del caso.
+MIRROR_KITS = 8
+MISSING_KIT = 6
+for _k in range(1, MIRROR_KITS + 1):
+    _dom = f"kit{_k:02d}.cupon-austral.example"
+    _ip = f"203.0.113.{10 + _k}"
+    INFRA_ENTITIES += [
+        (f"kd{_k}", "domain", _dom, {"malicious": True, "description": f"Kit espejo {_k} (ficticio)."}, 0.9),
+        (f"ku{_k}", "url", f"https://{_dom}/cupon", {"malicious": True, "value": f"https://{_dom}/cupon"}, 0.9),
+        (f"ki{_k}", "ip", _ip, {"scope": "documentation", "routable": False, "version": 4}, 1.0),
+        (f"km{_k}", "email", f"registro{_k:02d}@correo-ficticio.example", {"description": "Correo de registro (ficticio)."}, 0.8),
+    ]
+    INFRA_RELATIONS += [
+        (f"ku{_k}", f"kd{_k}", "related_to", {}, 0.9),
+        (f"kd{_k}", f"ki{_k}", "resolves_to", {}, 0.9),
+        (f"kd{_k}", f"km{_k}", "registered_with", {}, 0.8),
+    ]
+    if _k != MISSING_KIT:
+        INFRA_RELATIONS.append((f"ku{_k}", f"ki{_k}", "hosted_on", {}, 0.8))
+    if _k <= 3:  # los primeros kits se vincularon a la campaña a mano
+        INFRA_RELATIONS.append(("camp", f"kd{_k}", "uses", {"description": "Kit usado por la campaña (ficticio)."}, 0.8))
+
 # Propuestas que quedan para revisión humana (no confirmadas)
 PENDING_ENTITIES: list[tuple[str, str, str, dict, float]] = [
     ("op", "person", OPERATOR, {

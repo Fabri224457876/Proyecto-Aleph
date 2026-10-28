@@ -258,3 +258,110 @@ export interface FindingCreated {
   entity_created?: boolean;
   relation_id?: number | null;
 }
+
+// ---------------------------------------------------------------- búsqueda, preguntas y TLÖN
+
+export type HitKind = "case" | "entity" | "account" | "post" | "source" | "finding" | "link";
+
+export interface HitOut {
+  ref: string;
+  kind: HitKind;
+  id: number;
+  case_id: number;
+  title: string;
+  snippet: string;
+  score: number;
+  lexical: number;
+  semantic: number | null;
+  status: string;
+  extra: Record<string, unknown>;
+}
+
+export interface GlobalSearchOut {
+  query: string;
+  semantic_status: "usado" | "no_configurado" | "no_responde" | "omitido";
+  warnings: string[];
+  items: HitOut[];
+}
+
+export interface AskOut {
+  answer: string;
+  llm_status: string;
+  retrieval: string;
+  citations: HitOut[];
+  context: HitOut[];
+  invalid_citations: string[];
+  warnings: string[];
+}
+
+export interface LookupAction {
+  id: string;
+  title: string;
+  description: string;
+  kind: "connector" | "tool";
+  name: string;
+  method: string;
+  path: string;
+  form: Record<string, string>;
+  network: boolean;
+  available: boolean;
+  unavailable_reason: string;
+}
+
+export interface LookupPlan {
+  query: string;
+  kind: string;
+  kind_label: string;
+  value: string;
+  actions: LookupAction[];
+  note: string;
+}
+
+export interface TlonReview {
+  id: string;
+  veredicto: "plausible" | "dudosa" | "descartable";
+  razon: string;
+  verificar: string;
+}
+
+export interface TlonHypothesis {
+  ref: string;
+  src: number;
+  dst: number;
+  src_label: string;
+  dst_label: string;
+  type: string;
+  score: number;
+  percentile: number;
+  relation_id: number | null;
+  review: TlonReview | null;
+  evidence: {
+    similar_neighbors: string[];
+    common_neighbors: string[];
+    shared_attributes: string[];
+    explanation: string;
+  };
+}
+
+export interface TlonRunOut {
+  status: "ok" | "datos_insuficientes";
+  message: string;
+  nodes: number;
+  edges: number;
+  quality: {
+    holdout_edges: number;
+    mrr: number | null;
+    hits_at_5: number | null;
+    baseline_hits_at_5: number | null;
+    final_loss: number;
+    feature_source: string;
+  } | null;
+  feature_source: string;
+  llm_status: string;
+  embeddings_status: string;
+  hypotheses: TlonHypothesis[];
+  lectura: Array<{ texto: string; ids: string[] }>;
+  created_relations: number;
+  source_id: number | null;
+  warnings: string[];
+}

@@ -1355,3 +1355,33 @@ kbd {
   font-weight: 650;
   margin: 2px 4px 8px;
 }
+
+/* Búsqueda, preguntas al caso y TLÖN */
+.topsearch {
+  flex: 0 1 230px;
+  min-width: 160px;
+}
+.topsearch .input {
+  width: 100%;
+  padding: 6px 10px;
+}
+.bad-text {
+  color: var(--bad);
+}
+.answer {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.cite {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.85em;
+  background: var(--accent-soft);
+  border-radius: 4px;
+  padding: 0 4px;
+  text-decoration: none;
+}
+.cite-bad {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
