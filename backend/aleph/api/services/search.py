@@ -238,6 +238,9 @@ def case_pool(session: Session, case_id: int, *, limit: int = 200) -> list[Hit]:
 
 _cache: OrderedDict[str, np.ndarray] = OrderedDict()
 _CACHE_MAX = 20_000
+# Tope por texto: alcanza para el significado y evita que un texto larguísimo (código, hashes,
+# URLs pegadas) supere el contexto del modelo; con Ollama eso tira abajo el proceso de embeddings.
+EMBED_MAX_CHARS = 1000
 
 
 def _key(model: str, text: str) -> str:
@@ -245,6 +248,7 @@ def _key(model: str, text: str) -> str:
 
 
 async def _embed(client: FunesClient, texts: list[str]) -> np.ndarray:
+    texts = [(t or " ")[:EMBED_MAX_CHARS] for t in texts]
     out: list[np.ndarray | None] = [None] * len(texts)
     missing = []
     for i, t in enumerate(texts):

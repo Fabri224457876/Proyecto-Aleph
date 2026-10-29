@@ -125,6 +125,21 @@ Leé el documento y devolvé cada afirmación verificable sobre una persona u or
   copiada letra por letra, no incluyas la afirmación.
 - "confianza": de 0 a 1, qué tan explícito es el documento.
 
+CUIDADO
+- Una afirmación por cada lugar y cada momento. "X estuvo en A a las 10 y en B a las 11" son DOS
+  afirmaciones, cada una con su propio lugar, su propia hora y su propia cita.
+- El sujeto es quien hace o padece lo que dice la cita, no otra persona o cuenta mencionada
+  antes en el documento.
+- La cita se copia tal cual, sin agregar ni cambiar palabras.
+
+EJEMPLO
+Documento: "El 5/4/2025 Juan Gómez llegó a Salta a las 9:00 y a las 9:30 apareció en Mendoza."
+Salida: {"afirmaciones": [
+  {"sujeto": "Juan Gómez", "predicado": "ubicado_en", "valor": "Salta", "desde": "2025-04-05T09:00",
+   "hasta": null, "lugar": "Salta", "cita": "Juan Gómez llegó a Salta a las 9:00", "confianza": 0.9},
+  {"sujeto": "Juan Gómez", "predicado": "ubicado_en", "valor": "Mendoza", "desde": "2025-04-05T09:30",
+   "hasta": null, "lugar": "Mendoza", "cita": "a las 9:30 apareció en Mendoza", "confianza": 0.9}]}
+
 $security
 
 FORMATO DE SALIDA

@@ -12,6 +12,7 @@ detectada. Cada contradicción lista las fuentes, la severidad y las lecturas po
 elegir una: decide el analista.
 """
 
+import dataclasses
 import math
 import re
 from datetime import UTC, datetime, timedelta, timezone
@@ -442,6 +443,23 @@ def detect_contradictions(claims: list[Claim],
 # --- LLM (1): texto -> afirmaciones --------------------------------------------------------
 
 
+def _literal_tail(text: str, quote: str):
+    """La cita tal cual o, si el modelo le antepuso palabras (suele repetir el sujeto), el tramo
+    final más largo que sí es literal, de al menos 4 palabras. Ese caso no cuenta como exacto."""
+    match = locate_quote(text, quote, min_chars=4)
+    if match is not None:
+        return match
+    words = quote.split()
+    for cut in range(1, len(words) - 3):
+        tail = " ".join(words[cut:])
+        if len(tail) < 15:
+            break
+        match = locate_quote(text, tail, min_chars=15)
+        if match is not None:
+            return dataclasses.replace(match, exact=False)
+    return None
+
+
 class _LLMClaim(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     sujeto: LooseStr = Field(validation_alias=AliasChoices("sujeto", "subject"))
@@ -524,7 +542,7 @@ async def extract_claims(
             continue
         for item in parsed.afirmaciones:
             raw = item.model_dump()
-            match = locate_quote(chunk.text, item.cita, min_chars=4)
+            match = _literal_tail(chunk.text, item.cita)
             if match is None:
                 result.discarded.append({"reason": "la cita no aparece en el texto fuente", **raw})
                 continue

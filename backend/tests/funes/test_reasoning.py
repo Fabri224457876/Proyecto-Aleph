@@ -57,3 +57,14 @@ def test_respuesta_marca_citas_sin_respaldo():
     assert out.cited == ["P4", "E1"] and out.invalid == ["E9"]
     assert "[E9?]" in out.answer and "[P4]" in out.answer
     assert "<<<FRAGMENTOS" in client.messages[0][1]["content"]
+
+
+def test_cita_con_sujeto_antepuesto_se_rescata_si_el_resto_es_literal():
+    from aleph.funes.contradictions import _literal_tail
+
+    text = "Ana Ficticia escribió desde Rosario el 3/3/2026 a las 14:00 y desde Ushuaia el 3/3/2026 a las 14:20."
+    exact = _literal_tail(text, "Ana Ficticia escribió desde Rosario el 3/3/2026 a las 14:00")
+    assert exact is not None and exact.exact
+    tail = _literal_tail(text, "Ana Ficticia escribió desde Ushuaia el 3/3/2026 a las 14:20")
+    assert tail is not None and not tail.exact and tail.text.startswith("desde Ushuaia")
+    assert _literal_tail(text, "Ana Ficticia viajó a Córdoba en avión ese mismo día") is None
