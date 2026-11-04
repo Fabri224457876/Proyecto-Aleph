@@ -19,11 +19,12 @@ from sqlalchemy.orm import sessionmaker
 from aleph.api import security
 from aleph.api.services.outbound import enrichment_providers, llm_http, outbound_http
 from aleph.core.config import Settings, get_settings
-from aleph.core.db import get_session, init_db, make_engine
+from aleph.core.db import get_session
 from aleph.core.models import Case, User
 from aleph.demo import seed as demo_seed
 from aleph.demo import story
 from aleph.main import app
+from _testdb import fresh_engine
 
 DEMO_PASSWORD = "clave-demo-de-prueba-123"
 ADMIN_PASSWORD = "clave-admin-de-prueba-123"
@@ -35,8 +36,7 @@ DEMO_CASE_NAME = story.DEMO_CASE_NAME
 def demo(tmp_path_factory):
     """Caso de demostración sembrado por el sembrador real, una vez por módulo."""
     data_dir = tmp_path_factory.mktemp("demo-data")
-    engine = make_engine("sqlite:///:memory:")
-    init_db(engine)
+    engine = fresh_engine()
     factory = sessionmaker(bind=engine, expire_on_commit=False)
     with factory() as session:
         report = demo_seed.seed(session, data_dir=data_dir, demo_password=DEMO_PASSWORD,

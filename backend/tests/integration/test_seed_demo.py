@@ -5,16 +5,21 @@ import re
 from sqlalchemy.orm import sessionmaker
 
 from aleph.core import audit
-from aleph.core.db import init_db, make_engine
 from aleph.demo import seed as demo_seed
+from aleph.core.db import init_db, make_engine
+from _testdb import fresh_engine
 
 PW = "clave-demo-para-seed-123"
 APW = "clave-admin-para-seed-123"
 
 
 def _database(url: str):
-    engine = make_engine(url)
-    init_db(engine)
+    # Una URL de archivo es parte de lo que se prueba (el CLI la lee): esa queda en SQLite.
+    if url.endswith(".db"):
+        engine = make_engine(url)
+        init_db(engine)
+    else:
+        engine = fresh_engine(url)
     return engine, sessionmaker(bind=engine, expire_on_commit=False)
 
 

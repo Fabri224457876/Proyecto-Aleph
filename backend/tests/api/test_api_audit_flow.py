@@ -5,8 +5,8 @@ from sqlalchemy.orm import sessionmaker
 
 from aleph.api import auditlog
 from aleph.core import audit
-from aleph.core.db import init_db, make_engine
 from aleph.core.models import AuditEvent
+from _testdb import fresh_engine
 
 
 def test_full_flow_keeps_audit_chain_valid(client, auth, users, synth, menard_engine, db):
@@ -133,8 +133,7 @@ def test_jobs_listing(client, auth, make_case, synth, menard_engine):
 
 def test_concurrent_writes_do_not_fork_the_chain(tmp_path):
     """Sin serializar, dos pedidos simultáneos leerían el mismo `prev_hash` y la cadena se rompería."""
-    engine = make_engine(f"sqlite:///{(tmp_path / 'audit.db').as_posix()}")
-    init_db(engine)
+    engine = fresh_engine(f"sqlite:///{(tmp_path / 'audit.db').as_posix()}")
     factory = sessionmaker(bind=engine, expire_on_commit=False)
     errors = []
     start = threading.Barrier(8)

@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 
 from aleph.api import security
 from aleph.core.config import Settings, get_settings
-from aleph.core.db import get_session, init_db, make_engine
+from aleph.core.db import get_session
 from aleph.core.models import User
 from aleph.core.schemas import (
     AccountProfile,
@@ -26,6 +26,7 @@ from aleph.core.schemas import (
     SignalResult,
 )
 from aleph.main import app
+from _testdb import fresh_engine
 
 PASSWORD = "clave-de-prueba-123"
 LEGAL = "Investigación de prueba autorizada por resolución sintética 1/2026."
@@ -47,8 +48,7 @@ def settings(tmp_path):
 
 @pytest.fixture
 def session_factory():
-    engine = make_engine("sqlite:///:memory:")
-    init_db(engine)
+    engine = fresh_engine()
     yield sessionmaker(bind=engine, expire_on_commit=False)
     engine.dispose()
 

@@ -1,0 +1,75 @@
+# Aleph en un comando, con PostgreSQL. Proyecto y puertos propios: no toca otros servicios del nodo.
+#   cp deploy/.env.example deploy/.env    # completar las claves
+#   docker compose -f deploy/compose.yaml up -d --build
+# Consola simple: http://<nodo>:8101 · completa: http://<nodo>:8102 · API: http://<nodo>:8100/docs
+name: aleph
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: aleph
+      POSTGRES_USER: aleph
+      POSTGRES_PASSWORD: ${ALEPH_DB_PASSWORD:?definí ALEPH_DB_PASSWORD en deploy/.env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aleph -d aleph"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    # Sin puerto publicado: solo la API habla con la base.
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/api.Dockerfile
+    env_file: .env
+    environment:
+      ALEPH_ENV: prod
+      ALEPH_DATABASE_URL: postgresql+psycopg://aleph:${ALEPH_DB_PASSWORD}@postgres:5432/aleph
+      ALEPH_DATA_DIR: /data
+    volumes:
+      - data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${ALEPH_API_PORT:-8100}:8000"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/web.Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${ALEPH_WEB_PORT:-8101}:8101"
+      - "${ALEPH_WEB_FULL_PORT:-8102}:8102"
+    restart: unless-stopped
+
+  # IA local opcional: `docker compose --profile ia up -d`. Si el nodo ya tiene un Ollama
+  # (o un LiteLLM), no hace falta: apuntá ALEPH_LLM_BASE_URL y ALEPH_EMBED_BASE_URL a ese servidor.
+  ollama:
+    profiles: ["ia"]
+    image: ollama/ollama:0.5.7
+    volumes:
+      - ollama:/root/.ollama
+    ports:
+      - "${ALEPH_OLLAMA_PORT:-11435}:11434"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  data:
+  ollama:

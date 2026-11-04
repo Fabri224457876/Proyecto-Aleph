@@ -1,13 +1,12 @@
 from sqlalchemy.orm import sessionmaker
 
 from aleph.core import audit
-from aleph.core.db import init_db, make_engine
 from aleph.core.models import AuditEvent
+from _testdb import fresh_engine
 
 
 def _session():
-    engine = make_engine("sqlite:///:memory:")
-    init_db(engine)
+    engine = fresh_engine()
     return sessionmaker(bind=engine)()
 
 
@@ -37,8 +36,7 @@ def test_chain_detects_deletion():
 def test_concurrent_writers_do_not_fork_chain(tmp_path):
     import threading
 
-    engine = make_engine(f"sqlite:///{tmp_path / 'a.db'}")
-    init_db(engine)
+    engine = fresh_engine(f"sqlite:///{tmp_path / 'a.db'}")
     Session = sessionmaker(bind=engine)
     errors = []
 
