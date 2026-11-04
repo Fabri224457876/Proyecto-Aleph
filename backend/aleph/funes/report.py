@@ -15,7 +15,7 @@ from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 from aleph.core.schemas import ClusterResult, EntityRecord, PairResult, RelationRecord
 from aleph.funes import prompts
 from aleph.funes.client import FunesClient, LLMError
-from aleph.funes.contradictions import Contradiction
+from aleph.funes.contradictions import READING_LABELS, Contradiction
 from aleph.funes.language import find_categorical
 from aleph.funes.structured import LooseStr, StructuredOutputError, lenient_list
 
@@ -75,13 +75,32 @@ def _level(score: float) -> ConfidenceLevel:
     return "alta" if score >= 0.8 else "media" if score >= 0.5 else "baja"
 
 
+# Un modelo local mediano suele tener 4096 tokens de contexto (Ollama, por defecto) y recorta por el
+# principio: si el inventario no entra, se pierden las instrucciones. Para el LLM va uno compacto.
+LLM_LIMITS = {"max_entities": 40, "max_relations": 40, "max_pairs": 15, "max_sources": 10,
+              "prefer_structure": True}
+# Al recortar, primero lo que arma la estructura del caso; las cuentas sueltas, al final.
+_TYPE_PRIORITY = {"event": 0, "malware": 0, "organization": 0, "person": 1, "domain": 1, "ip": 1,
+                  "vulnerability": 1, "wallet": 1, "hash": 2, "url": 2, "email": 2, "location": 2}
+
+
 def build_inventory(case: CaseData, *, max_entities: int = 150, max_relations: int = 200,
-                    max_pairs: int = 60) -> tuple[list[InventoryItem], list[str]]:
+                    max_pairs: int = 60, max_sources: int | None = None,
+                    prefer_structure: bool = False) -> tuple[list[InventoryItem], list[str]]:
     """Asigna ids canónicos a los datos del caso. Devuelve (inventario, avisos por recortes)."""
     items: list[InventoryItem] = []
     warnings: list[str] = []
     entity_ids: dict[str, str] = {}
-    entities = sorted(enumerate(case.entities), key=lambda p: (-p[1].confidence, p[0]))
+    in_pairs = {key for pair in case.pairs for key in (pair.a, pair.b)}
+
+    def rank(p):
+        index, entity = p
+        if not prefer_structure:
+            return (-entity.confidence, index)
+        tier = 1 if entity.label in in_pairs else _TYPE_PRIORITY.get(entity.type, 3)
+        return (tier, -entity.confidence, index)
+
+    entities = sorted(enumerate(case.entities), key=rank)
     if len(entities) > max_entities:
         warnings.append(f"Se incluyeron las {max_entities} entidades de mayor confianza de "
                         f"{len(entities)}.")
@@ -127,12 +146,16 @@ def build_inventory(case: CaseData, *, max_entities: int = 150, max_relations: i
                                    original="|".join(cluster.members),
                                    confidence=_level(cluster.cohesion)))
     for number, contradiction in enumerate(case.contradictions, start=1):
-        readings = ", ".join(r.kind for r in contradiction.readings)
+        readings = ", ".join(READING_LABELS.get(r.kind, r.kind) for r in contradiction.readings)
         items.append(InventoryItem(
             id=f"C{number}", kind="contradiccion", original=contradiction.id,
-            text=f"contradicción {contradiction.kind}, severidad {contradiction.severity}: "
+            text=f"contradicción {contradiction.kind.replace('_', ' ')}, severidad {contradiction.severity}: "
                  f"{_clip(contradiction.summary, 400)} Lecturas posibles: {readings}."))
-    for number, source in enumerate(case.sources, start=1):
+    sources = case.sources
+    if max_sources is not None and len(sources) > max_sources:
+        warnings.append(f"Se incluyeron {max_sources} fuentes de {len(sources)}.")
+        sources = sorted(sources, key=lambda src: src.reliability or "Z9")[:max_sources]
+    for number, source in enumerate(sources, start=1):
         text = f"fuente: {_clip(source.title, 120)}"
         if source.reference:
             text += f" — {_clip(source.reference, 160)}"
@@ -172,6 +195,30 @@ class _LLMReport(BaseModel):
     hallazgos: _Statements = Field(default_factory=list)  # type: ignore[valid-type]
     hipotesis: _Statements = Field(default_factory=list)  # type: ignore[valid-type]
     vacios: _Statements = Field(default_factory=list)  # type: ignore[valid-type]
+
+
+def _decode_statement(*, with_confidence: bool = False) -> dict[str, Any]:
+    props: dict[str, Any] = {"texto": {"type": "string"}, "ids": {"type": "array", "items": {"type": "string"}}}
+    if with_confidence:
+        props["confianza"] = {"type": "string", "enum": ["baja", "media", "alta"]}
+    return {"type": "object", "properties": props, "required": list(props)}
+
+
+# Esquemas estrictos para guiar al modelo: cada afirmación trae sus ids (ver FunesClient.chat_json).
+REPORT_DECODE_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "resumen_ejecutivo": {"type": "array", "items": _decode_statement()},
+        "hallazgos": {"type": "array", "items": _decode_statement()},
+        "hipotesis": {"type": "array", "items": _decode_statement(with_confidence=True)},
+        "vacios": {"type": "array", "items": _decode_statement()},
+    },
+    "required": ["resumen_ejecutivo", "hallazgos", "hipotesis", "vacios"],
+}
+SUMMARY_DECODE_SCHEMA: dict[str, Any] = {
+    "type": "object", "properties": {"resumen": {"type": "array", "items": _decode_statement()}},
+    "required": ["resumen"],
+}
 
 
 class _LLMSummary(BaseModel):
@@ -281,10 +328,18 @@ def _render_section(title: str, statements: list[Statement], empty: str) -> list
     return [*lines, ""]
 
 
+def _dedupe_source(text: str) -> str:
+    """'X — X (valoración: F6)' → 'X (valoración: F6)': título y referencia suelen ser lo mismo."""
+    head, sep, rest = text.partition(" — ")
+    if sep and rest.startswith(head):
+        return rest
+    return text
+
+
 def _render_sources(case: CaseData, inventory: list[InventoryItem]) -> list[str]:
     lines = ["## 5. Fuentes", ""]
     sources = [item for item in inventory if item.kind == "fuente"]
-    lines += [f"- [{item.id}] {item.text.removeprefix('fuente: ')}" for item in sources] or [
+    lines += [f"- [{item.id}] {_dedupe_source(item.text.removeprefix('fuente: '))}" for item in sources] or [
         "_El caso no tiene fuentes cargadas._"]
     return [*lines, ""]
 
@@ -296,8 +351,10 @@ def _render_references(sections: dict[str, list[Statement]],
     if not cited:
         return []
     order = {item_id: n for n, item_id in enumerate(inventory)}
+    labels = _entity_labels(list(inventory.values()))
     lines = ["## Anexo. Datos citados", ""]
-    lines += [f"- [{i}] {inventory[i].text}" for i in sorted(cited, key=order.__getitem__)]
+    lines += [f"- [{i}] {_readable_relation(inventory[i], labels) if inventory[i].kind == 'relacion' else inventory[i].text}"
+              for i in sorted(cited, key=order.__getitem__)]
     return [*lines, ""]
 
 
@@ -344,8 +401,33 @@ def _markdown(case: CaseData, sections: dict[str, list[Statement]],
 # --- Redacción sin LLM ---------------------------------------------------------------------
 
 
+RELATIONS_ES = {
+    "same_operator": "tendría el mismo operador que", "uses": "usa", "targets": "apunta a",
+    "located_at": "ubicado en", "communicates_with": "se comunica con", "indicates": "indica",
+    "resolves_to": "resuelve a", "related_to": "relacionado con", "registered_with": "registrado con",
+    "hosted_on": "alojado en", "associated_with": "asociado a", "attributed_to": "atribuido a",
+    "member_of": "miembro de", "owns": "es dueño de", "mentions": "menciona",
+}
+
+
+def _entity_labels(inventory: list[InventoryItem]) -> dict[str, str]:
+    return {item.id: item.text.split(": ", 1)[-1].rsplit(" (confianza", 1)[0]
+            for item in inventory if item.kind == "entidad"}
+
+
+def _readable_relation(item: InventoryItem, labels: dict[str, str]) -> str:
+    """'E1 --uses--> E2 (confianza 0.90)' → 'Troyano X usa servidor Y (confianza 0,90)'."""
+    match = re.match(r"(E\d+) --(.+?)--> (E\d+) \(confianza ([\d.]+)\)", item.text)
+    if not match:
+        return item.text
+    src, rel, dst, conf = match.groups()
+    verb = RELATIONS_ES.get(rel, rel.replace("_", " "))
+    return f"{labels.get(src, src)} {verb} {labels.get(dst, dst)} (confianza {conf.replace('.', ',')})"
+
+
 def _fallback_sections(inventory: list[InventoryItem]) -> dict[str, list[Statement]]:
     """Informe mínimo armado solo con plantillas, para cuando el LLM no está o falla."""
+    labels = _entity_labels(inventory)
     count = {kind: sum(item.kind == kind for item in inventory)
              for kind in ("entidad", "relacion", "hipotesis", "grupo", "contradiccion", "fuente")}
     first = {kind: [item.id for item in inventory if item.kind == kind][:5] for kind in count}
@@ -355,8 +437,10 @@ def _fallback_sections(inventory: list[InventoryItem]) -> dict[str, list[Stateme
               "contradicciones entre fuentes, todas pendientes de revisión."),
         ids=first["entidad"][:2] + first["hipotesis"][:1] + first["contradiccion"][:1])
     summary.unsupported = not summary.ids
-    findings = [Statement(text=f"Se registró: {item.text}.", ids=[item.id])
-                for item in inventory if item.kind in ("relacion", "contradiccion")][:25]
+    findings = [Statement(text=f"Se registró: {_readable_relation(item, labels)}.", ids=[item.id])
+                for item in inventory if item.kind == "relacion"][:25]
+    findings = [Statement(text=f"Se registró: {item.text}", ids=[item.id])
+                for item in inventory if item.kind == "contradiccion"] + findings
     hypotheses = [Statement(text=f"No se puede descartar la {item.text}.", ids=[item.id],
                             confidence=item.confidence or "baja")
                   for item in inventory if item.kind in ("hipotesis", "grupo")][:25]
@@ -384,14 +468,14 @@ def _messages(system_template: str, case: CaseData,
 
 async def draft_report(case: CaseData, client: FunesClient | None = None) -> ReportDraft:
     """Borrador de informe en Markdown con estructura fija y referencias validadas."""
-    inventory, warnings = build_inventory(case)
+    inventory, warnings = build_inventory(case, **(LLM_LIMITS if client is not None else {}))
     by_id = {item.id: item for item in inventory}
     generated_by: Literal["llm", "plantilla"] = "llm"
     sections: dict[str, list[Statement]] | None = None
     if client is not None and inventory:
         try:
             raw = await client.chat_json(_messages(prompts.REPORT_SYSTEM, case, inventory),
-                                         _LLMReport, temperature=0.2)
+                                         _LLMReport, temperature=0.2, decode_schema=REPORT_DECODE_SCHEMA)
         except (LLMError, StructuredOutputError) as exc:
             warnings.append(f"El modelo no devolvió un informe utilizable ({exc}); se usó la "
                             "plantilla determinística.")
@@ -422,14 +506,15 @@ async def draft_report(case: CaseData, client: FunesClient | None = None) -> Rep
 
 async def summarize_case(case: CaseData, client: FunesClient | None = None) -> CaseSummary:
     """Resumen breve del caso, con las mismas reglas de respaldo y lenguaje que el informe."""
-    inventory, warnings = build_inventory(case)
+    inventory, warnings = build_inventory(case, **(LLM_LIMITS if client is not None else {}))
     by_id = {item.id: item for item in inventory}
     generated_by: Literal["llm", "plantilla"] = "llm"
     statements: list[Statement] = []
     if client is not None and inventory:
         try:
             raw = await client.chat_json(_messages(prompts.SUMMARY_SYSTEM, case, inventory),
-                                         _LLMSummary, wrap_list_as="resumen", temperature=0.2)
+                                         _LLMSummary, wrap_list_as="resumen", temperature=0.2,
+                                         decode_schema=SUMMARY_DECODE_SCHEMA)
             statements = [validate_statement(s, by_id, require_ids=True)
                           for s in raw.resumen if s.texto]
         except (LLMError, StructuredOutputError) as exc:

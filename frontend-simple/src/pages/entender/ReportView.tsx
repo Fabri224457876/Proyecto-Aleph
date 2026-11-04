@@ -24,6 +24,7 @@ export function ReportView() {
   const [report, setReport] = useState<ReportState | null>(null);
   const [reportError, setReportError] = useState<string | null>(null);
   const [exportError, setExportError] = useState<unknown>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<AttackTechnique[] | null>(null);
   const [linked, setLinked] = useState<number | null>(null);
@@ -45,6 +46,24 @@ export function ReportView() {
       setReportError(errorMessage(err));
     } finally {
       setBusy(false);
+    }
+  }
+
+  // El PDF usa el borrador que ya se ve en pantalla; sin borrador, el servidor lo redacta (o usa la plantilla).
+  async function downloadPdf() {
+    setPdfBusy(true);
+    setExportError(null);
+    try {
+      await downloadFile(`/api/cases/${ctx.caseId}/funes/report/pdf`, `aleph-caso-${ctx.caseId}-informe.pdf`, {
+        title: title.trim(),
+        include_pending: includePending,
+        ...(report ? { markdown: report.markdown, generated_by: report.generatedBy } : {}),
+      });
+      toast.notify("Informe PDF descargado. Quedó registrado en la auditoría.", "ok");
+    } catch (err) {
+      setExportError(err);
+    } finally {
+      setPdfBusy(false);
     }
   }
 
@@ -96,6 +115,9 @@ export function ReportView() {
           <div className="btn-row">
             <Button variant="primary" disabled={busy} onClick={() => void draft()}>
               {busy ? "Redactando…" : "Redactar borrador"}
+            </Button>
+            <Button disabled={pdfBusy} onClick={() => void downloadPdf()}>
+              {pdfBusy ? "Armando PDF…" : "Descargar informe PDF"}
             </Button>
             {report && (
               <Button onClick={() => saveText(`aleph-caso-${ctx.caseId}-informe.md`, report.markdown, "text/markdown")}>

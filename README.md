@@ -3,7 +3,7 @@
 **Plataforma soberana de OSINT y ciberinteligencia (CTI).**
 Investigación en fuentes abiertas con grafo de entidades, IA 100 % local, atribución de cuentas por estilometría y trazabilidad completa de cada dato y cada acción.
 
-> Estado: **en desarrollo activo** (octubre 2026). Los motores y la consola web están implementados y probados; el despliegue y la validación contra plataformas reales están en curso. La sección [Estado y verificación](#estado-y-verificación) dice exactamente qué está probado y qué no.
+> Estado: **en desarrollo activo** (noviembre 2026). Los motores y las consolas están implementados y probados, y hay un despliegue en un comando con PostgreSQL; la validación contra plataformas y datos reales está en curso. La sección [Estado y verificación](#estado-y-verificación) dice exactamente qué está probado y qué no.
 
 Producto: **P.R.O.A.** (Plataforma de Reconocimiento y Operaciones Analíticas).
 
@@ -29,7 +29,7 @@ Tres principios de diseño:
 |---|---|
 | **Núcleo** | Casos con base legal obligatoria y marca TLP, grafo de entidades y relaciones, expediente por incisos, roles (admin, analista, auditor), auditoría inmutable |
 | **MENARD** | Detección de posibles multicuentas: estilometría, patrones horarios, conducta, red y perfil, fusionados en un puntaje calibrado con evidencia legible |
-| **FUNES** | IA local: extracción de entidades (reglas para documentos argentinos + LLM), motor de contradicciones espacio-temporales, borrador de informe, mapeo a ATT&CK |
+| **FUNES** | IA local: extracción de entidades (reglas para documentos argentinos + LLM), motor de contradicciones espacio-temporales, borrador de informe e informe en PDF (marca TLP en cada página, fuentes valoradas con Admiralty Code, huella SHA-256 auditada), mapeo a ATT&CK |
 | **CTI** | Extracción y enriquecimiento de IOCs, exportación e importación STIX 2.1, eventos MISP, capas para ATT&CK Navigator, TLP 2.0 |
 | **Conectores** | Bluesky, Mastodon, Reddit, GitHub, Telegram (canales públicos), X (API oficial); importación de archivos oficiales de X, Instagram y Discord |
 | **Caja OSINT** | Metadatos de imágenes y documentos, Wayback Machine, dorks, typosquatting, favicon hash, ASN, wallets, CVE/KEV, ransomware, preservación de evidencia |
@@ -99,6 +99,7 @@ backend/aleph/
 extension/     Aleph Lens (Manifest V3, sin framework)
 frontend/      consola web completa (React + TypeScript + Cytoscape.js)
 frontend-simple/ consola simple: Reunir, Revisar, Entender y contar; búsqueda y preguntas
+deploy/        Docker Compose: API, PostgreSQL, consolas (nginx) e IA local opcional
 docs/          plan maestro y contrato OpenAPI
 ```
 
@@ -110,10 +111,10 @@ Los motores no tocan la base de datos: reciben y devuelven esquemas tipados, y p
 
 | Componente | Tests | Verificado contra el mundo real |
 |---|---|---|
-| Núcleo y API | pasan | Sí, sobre SQLite. PostgreSQL pendiente |
+| Núcleo y API | pasan | Sí, sobre SQLite y sobre PostgreSQL 16 (los 112 tests que tocan la base, incluida la auditoría concurrente) |
 | Auditoría encadenada | pasan, incluida escritura concurrente | Sí |
 | MENARD | pasan | Solo dataset sintético |
-| FUNES | pasan | Reglas: sí. LLM: probado con qwen3:8b local sobre el caso de demostración (informe, preguntas, revisión de hipótesis) |
+| FUNES | pasan, incluido el informe en PDF | Reglas: sí. LLM: probado con qwen3:8b local sobre el caso de demostración (informe con todas las afirmaciones citadas, preguntas, contradicciones 3 de 3, revisión de hipótesis); ver [`docs/PRUEBAS_EN_VIVO.md`](docs/PRUEBAS_EN_VIVO.md) |
 | TLÖN | pasan, incluido chequeo de gradientes | Sobre el caso de demostración sintético con embeddings reales; sin datos reales todavía |
 | Búsqueda | pasan | Texto y significado (bge-m3) sobre el caso de demostración; la búsqueda externa reusa conectores y herramientas |
 | CTI | pasan | STIX validado con la librería `stix2`. Proveedores externos: solo simulados |
@@ -121,8 +122,9 @@ Los motores no tocan la base de datos: reciben y devuelven esquemas tipados, y p
 | Caja OSINT | pasan | Algoritmos verificados con vectores conocidos. APIs: solo simuladas |
 | Aleph Lens | pasan | Extractores contra HTML de ejemplo, no contra las páginas reales |
 | Consolas web | build sin errores | Recorridas en navegador contra la API real; sin tests unitarios |
+| Despliegue (Docker Compose) | — | Escrito; falta levantarlo en el nodo de despliegue |
 
-Total: 895 tests de backend (incluido un recorrido de punta a punta sobre el caso de demostración) y 106 de la extensión.
+Total: 905 tests de backend (incluido un recorrido de punta a punta sobre el caso de demostración) y 106 de la extensión.
 
 ## Cómo correrlo
 
@@ -146,13 +148,24 @@ Crea una base local, siembra un caso ficticio de phishing (33 cuentas, 1 487 pub
 
 La configuración va por variables `ALEPH_*`; ver [`.env.example`](.env.example).
 
+Para correr las pruebas de base de datos contra PostgreSQL, apuntá `ALEPH_TEST_DATABASE_URL` a una base vacía y descartable (por ejemplo `postgresql+psycopg://usuario:clave@host:5432/aleph_test`): cada prueba borra y recrea el esquema.
+
+### Despliegue con Docker Compose
+
+```bash
+cp deploy/.env.example deploy/.env
+docker compose -f deploy/compose.yaml up -d --build
+```
+
+Levanta PostgreSQL 16, la API (puerto 8100) y las dos consolas detrás de nginx (8101 la simple, 8102 la completa). Al arrancar, la API crea las tablas, el primer administrador y, con `ALEPH_SEED_DEMO=1`, el caso de demostración. Fuera de desarrollo no arranca sin una `ALEPH_SECRET_KEY` propia de 32 caracteres o más. La IA local es opcional: `--profile ia` suma un Ollama con GPU, o se apunta `ALEPH_LLM_BASE_URL` a un servidor que ya exista en la red.
+
 ## Hoja de ruta
 
 - Evaluación de MENARD con datasets públicos de verificación de autoría.
 - Embeddings de estilo en GPU como señal adicional para MENARD.
 - TLÖN sobre casos reales y con más tipos de vínculo; correrlo como trabajo en segundo plano.
 - Validación de conectores y de Aleph Lens contra las plataformas reales.
-- Despliegue con Docker Compose.
+- Levantar el despliegue en el nodo con GPU y correr allí la demo completa.
 
 ## Autoría
 

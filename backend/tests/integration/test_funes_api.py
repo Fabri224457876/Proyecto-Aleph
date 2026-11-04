@@ -198,3 +198,23 @@ def test_informe_sin_configuracion_responde_503(client, token, demo_case, settin
     app.dependency_overrides[get_settings] = lambda: settings.model_copy(update={"llm_base_url": ""})
     out = client.post(f"/api/cases/{demo_case}/funes/report", headers=token("analista-demo"), json={})
     assert out.status_code == 503 and "no está configurado" in out.json()["detail"]
+
+
+def test_informe_pdf_sin_llm_usa_la_plantilla_y_queda_auditado(client, token, demo_case):
+    headers = token("analista-demo")
+    out = client.post(f"/api/cases/{demo_case}/funes/report/pdf", headers=headers, json={})
+    assert out.status_code == 200, out.text
+    assert out.headers["content-type"] == "application/pdf"
+    assert out.content.startswith(b"%PDF-") and "attachment" in out.headers["content-disposition"]
+    sha = out.headers["x-aleph-sha256"]
+    events = client.get("/api/audit/events", headers=token("auditor-demo"),
+                        params={"action": "funes.report_pdf"}).json()["items"]
+    assert events and events[0]["detail"]["pdf_sha256"] == sha
+    assert events[0]["detail"]["generated_by"] == "plantilla"
+
+
+def test_informe_pdf_con_borrador_ya_redactado_no_llama_al_llm(client, token, demo_case):
+    md = "# Borrador\n\n## 1. Resumen ejecutivo\n\n- **Confianza baja.** Texto revisado por el analista [E1]\n"
+    out = client.post(f"/api/cases/{demo_case}/funes/report/pdf", headers=token("analista-demo"),
+                      json={"markdown": md, "generated_by": "llm", "title": "Informe revisado"})
+    assert out.status_code == 200 and out.content.startswith(b"%PDF-")

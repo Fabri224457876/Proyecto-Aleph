@@ -35,7 +35,7 @@ const DEFAULT_FILTERS: Filters = {
   showConfirmed: true,
   showRejected: false,
   minConfidence: 0,
-  hideIsolated: false,
+  hideIsolated: true,
 };
 
 type Selection = { kind: "node"; id: number } | { kind: "edge"; id: number } | null;

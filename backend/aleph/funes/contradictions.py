@@ -118,6 +118,14 @@ READINGS: dict[str, str] = {
     "ubicacion_imprecisa": "Ubicación declarada y no verificada, geolocalización imprecisa o "
                            "publicación diferida respecto del hecho.",
 }
+# Nombre corto de cada lectura, para listarlas en una línea.
+READING_LABELS: dict[str, str] = {
+    "suplantacion": "suplantación",
+    "error_de_carga": "error de carga",
+    "homonimos": "homónimos",
+    "fuente_poco_fiable": "fuente poco fiable",
+    "ubicacion_imprecisa": "ubicación imprecisa",
+}
 _READINGS_BY_KIND: dict[str, tuple[str, ...]] = {
     "espacio_temporal": ("suplantacion", "error_de_carga", "homonimos", "ubicacion_imprecisa",
                          "fuente_poco_fiable"),

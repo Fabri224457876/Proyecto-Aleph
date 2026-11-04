@@ -17,8 +17,7 @@ import {
   SOURCE_KIND_LABEL,
   TLP_LABEL,
   TLP_ORDER,
-  relationLabel,
-} from "../lib/labels";
+  relationLabel, platformLabel } from "../lib/labels";
 import { CREDIBILITY_HELP, RELIABILITY_HELP } from "../lib/glossary";
 import { navigate, Link, useLocation } from "../lib/router";
 
@@ -675,7 +674,7 @@ function BuscarSection() {
             <h3>Cuentas ({result.data.accounts.length})</h3>
             {result.data.accounts.map((a) => (
               <p key={a.id} className="small">
-                @{a.handle} <span className="muted">· {a.platform}</span>
+                @{a.handle} <span className="muted">· {platformLabel(a.platform)}</span>
               </p>
             ))}
             <h3>Publicaciones ({result.data.posts.length})</h3>

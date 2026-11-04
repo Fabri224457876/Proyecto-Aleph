@@ -134,11 +134,12 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   return (await res.text()) as unknown as T;
 }
 
-/** Descarga un archivo protegido por token (el enlace directo no envía el Bearer). */
-export async function downloadFile(path: string, fallbackName: string): Promise<void> {
+/** Descarga un archivo protegido por token (el enlace directo no envía el Bearer). Con `body`, por POST. */
+export async function downloadFile(path: string, fallbackName: string, body?: unknown): Promise<void> {
   const headers: Record<string, string> = {};
   if (currentToken) headers.Authorization = `Bearer ${currentToken}`;
-  const res = await fetch(path, { headers });
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  const res = await fetch(path, body === undefined ? { headers } : { method: "POST", headers, body: JSON.stringify(body) });
   if (!res.ok) {
     const { detail, errors } = await readError(res);
     if (res.status === 401 && currentToken) unauthorizedHandler?.();

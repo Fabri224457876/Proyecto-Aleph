@@ -63,6 +63,23 @@ SIGNAL_LABELS = {
 }
 
 
+_PLATFORM_NAMES = {"twitter": "X", "x": "X", "instagram": "Instagram", "discord": "Discord",
+                   "bluesky": "Bluesky", "mastodon": "Mastodon", "reddit": "Reddit", "github": "GitHub",
+                   "telegram": "Telegram"}
+
+
+def _account(key: str) -> str:
+    """'instagram:handle' → '@handle (Instagram)', para el texto que lee el analista."""
+    platform, sep, handle = key.partition(":")
+    if not sep:
+        return key
+    return f"@{handle} ({_PLATFORM_NAMES.get(platform.lower(), platform)})"
+
+
+def _num(x: float) -> str:
+    return f"{x:.2f}".replace(".", ",")
+
+
 def _label(name: str) -> str:
     return SIGNAL_LABELS.get(name, name)
 
@@ -165,18 +182,18 @@ class Analysis:
     def _summary(self, i: int, j: int, score: float, conf: str,
                  contrib: list[tuple[float, SignalMatrix]]) -> str:
         contrib.sort(key=lambda t: -t[0])
-        pro = [f"{_label(s.name)} ({s.score[i, j]:.2f})" for k, s in contrib[:4] if k > 0.05]
-        con = [f"{_label(s.name)} ({s.score[i, j]:.2f})" for k, s in contrib[::-1][:3] if k < -0.05]
-        a, b = self.keys[i], self.keys[j]
+        pro = [f"{_label(s.name)} ({_num(s.score[i, j])})" for k, s in contrib[:4] if k > 0.05]
+        con = [f"{_label(s.name)} ({_num(s.score[i, j])})" for k, s in contrib[::-1][:3] if k < -0.05]
+        a, b = _account(self.keys[i]), _account(self.keys[j])
         posts = int(min(self.corpus.n_posts[i], self.corpus.n_posts[j]))
         if score >= 0.5:
-            head = f"Hipótesis de mismo operador entre {a} y {b}: puntaje {score:.2f}, confianza {conf}."
+            head = f"Hipótesis de mismo operador entre {a} y {b}: puntaje {_num(score)}, confianza {conf}."
         elif score >= 0.2:
-            head = (f"Hipótesis débil de mismo operador entre {a} y {b}: puntaje {score:.2f}, "
+            head = (f"Hipótesis débil de mismo operador entre {a} y {b}: puntaje {_num(score)}, "
                     f"confianza {conf}.")
         else:
             head = (f"Sin indicios suficientes para sostener la hipótesis de mismo operador entre "
-                    f"{a} y {b}: puntaje {score:.2f}.")
+                    f"{a} y {b}: puntaje {_num(score)}.")
         parts = [head]
         if pro:
             parts.append("Señales a favor: " + ", ".join(pro) + ".")

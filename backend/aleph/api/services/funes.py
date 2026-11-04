@@ -232,6 +232,17 @@ def run_report(case_data: CaseData, *, settings, http) -> tuple[ReportDraft, Llm
     return asyncio.run(_draft(case_data, settings, http))
 
 
+def run_report_or_template(case_data: CaseData, *, settings, http) -> ReportDraft:
+    """Como `run_report`, pero si el LLM no está o no responde arma el borrador con la plantilla."""
+    try:
+        draft, _probe = run_report(case_data, settings=settings, http=http)
+        return draft
+    except EngineUnavailable as exc:
+        draft = asyncio.run(draft_report(case_data, None))
+        draft.warnings.insert(0, f"Sin modelo de lenguaje ({exc}); el texto sale de la plantilla.")
+        return draft
+
+
 def build_case_data(session: Session, case, *, include_pending: bool,
                     claims: list[Claim] | None = None) -> CaseData:
     """Lo que el informe puede citar: entidades, relaciones, hipótesis de MENARD, fuentes y contradicciones."""

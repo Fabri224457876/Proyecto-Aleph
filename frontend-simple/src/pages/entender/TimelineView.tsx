@@ -1,3 +1,4 @@
+import { platformLabel } from "../../lib/labels";
 import { useMemo, useState } from "react";
 import * as ep from "../../api/endpoints";
 import type { TimelineItem } from "../../api/types";
@@ -77,7 +78,7 @@ export function TimelineView() {
                   <span className="timeline-time">{fmtTime(item.at)}</span>
                   <span className="row" style={{ gap: 6 }}>
                     <Chip>{item.kind === "post" ? "Publicación" : "Evento"}</Chip>
-                    {item.platform && <span className="muted">{item.platform}{item.handle ? ` · @${item.handle}` : ""}</span>}
+                    {item.platform && <span className="muted">{platformLabel(item.platform)}{item.handle ? ` · @${item.handle}` : ""}</span>}
                   </span>
                 </div>
                 <p style={{ fontWeight: 600, wordBreak: "break-word" }}>{item.title}</p>

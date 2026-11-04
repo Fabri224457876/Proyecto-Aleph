@@ -439,7 +439,7 @@ function textActions(ctx: ActionContext, text: string, what: string): ActionDef[
     {
       id: "chunks",
       title: "Buscar datos dentro del texto",
-      what: `Busca dominios, correos, IP, hashes, URL y fechas en ${what}, y te los muestra para que elijas cuáles sumar al expediente.`,
+      what: `Busca correos, dominios, IP, URL, hashes, fechas y datos argentinos (DNI, CUIT, CBU, patentes) en ${what}, y te los muestra para que elijas cuáles sumar al expediente.`,
       source: `${what[0].toUpperCase()}${what.slice(1)} que escribiste o subiste. No consulta internet.`,
       effect: "No guarda nada: solo sumás al expediente lo que elijas.",
       network: false,
@@ -465,7 +465,7 @@ function textActions(ctx: ActionContext, text: string, what: string): ActionDef[
     {
       id: "ioc",
       title: "Extraer indicadores y técnicas ATT&CK",
-      what: `Extrae los indicadores técnicos de ${what}, marca las técnicas ATT&CK que se mencionan y explica qué descartó y por qué.`,
+      what: `Extrae los indicadores técnicos ${what.startsWith("el ") ? `del ${what.slice(3)}` : `de ${what}`}, marca las técnicas ATT&CK que se mencionan y explica qué descartó y por qué.`,
       source: `${what[0].toUpperCase()}${what.slice(1)} que escribiste o subiste. No consulta internet.`,
       effect: "Los indicadores quedan como propuestas en Revisar. Las técnicas son sugerencias.",
       network: false,

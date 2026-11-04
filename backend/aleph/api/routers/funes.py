@@ -9,14 +9,16 @@ Qué devuelve cada uno cuando el LLM no está o no responde:
 """
 
 import hashlib
+from datetime import UTC, datetime
 from typing import Annotated
 
 import httpx
-from fastapi import Depends
+from fastapi import Depends, Response
 from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import select
 
 from aleph.core.models import Entity, Relation, Source
+from aleph.funes import pdf as funes_pdf
 from aleph.funes.contradictions import Claim, Contradiction
 from aleph.funes.ner import DateMention, Discarded
 
@@ -86,6 +88,13 @@ class ReportIn(BaseModel):
     title: str = Field(default="", max_length=200, description="Por defecto, el nombre del caso")
     include_pending: bool = Field(default=False, description="Incluir propuestas e hipótesis pendientes")
     claims: list[Claim] = Field(default_factory=list, description="Afirmaciones con contradicciones a citar")
+
+
+class ReportPdfIn(ReportIn):
+    markdown: str | None = Field(
+        default=None, max_length=200_000,
+        description="Borrador ya redactado (el de POST /report, revisado o no). Si falta, se redacta de nuevo")
+    generated_by: str = Field(default="plantilla", description="Origen del borrador que se manda: llm | plantilla")
 
 
 class ReportOut(BaseModel):
@@ -199,3 +208,41 @@ def report(body: ReportIn, case: ReadCase, session: DB, user: CurrentUser, setti
     session.commit()
     return ReportOut(markdown=draft.markdown, generated_by=draft.generated_by,
                      invalid_ids=draft.invalid_ids, warnings=draft.warnings)
+
+
+@router.post(
+    "/report/pdf",
+    summary="Informe de inteligencia en PDF, con marca TLP y fuentes valoradas (queda auditado)",
+    response_class=Response,
+    responses={200: {"content": {"application/pdf": {}}, "description": "El PDF del informe"}},
+)
+def report_pdf(body: ReportPdfIn, case: ReadCase, session: DB, user: CurrentUser, settings: SettingsDep,
+               llm: LlmDep) -> Response:
+    if body.markdown and body.markdown.strip():
+        markdown, generated_by = body.markdown, body.generated_by if body.generated_by in ("llm", "plantilla") else "plantilla"
+    else:
+        data = funes_service.build_case_data(session, case, include_pending=body.include_pending, claims=body.claims)
+        if body.title.strip():
+            data.title = body.title.strip()
+        draft = funes_service.run_report_or_template(data, settings=settings, http=llm)
+        markdown, generated_by = draft.markdown, draft.generated_by
+    sources = session.execute(select(Source).where(Source.case_id == case.id).order_by(Source.id)).scalars().all()
+    meta = funes_pdf.ReportMeta(
+        case_id=case.id, case_name=case.name, title=body.title.strip() or case.name, tlp=case.tlp,
+        purpose=case.description, legal_basis=case.legal_basis, author=user.username,
+        generated_at=datetime.now(UTC), generated_by=generated_by,
+        sources=[funes_pdf.SourceRow(id=s.id, kind=s.kind, reference=s.reference, reliability=s.reliability,
+                                     credibility=s.credibility, sha256=s.sha256, retrieved_at=s.retrieved_at)
+                 for s in sources],
+    )
+    content = funes_pdf.render_pdf(markdown, meta)
+    pdf_sha = hashlib.sha256(content).hexdigest()
+    auditlog.record(
+        session, "funes.report_pdf", user_id=user.id, case_id=case.id, target=f"case:{case.id}",
+        detail={"generated_by": generated_by, "markdown_sha256": funes_pdf.markdown_digest(markdown),
+                "pdf_sha256": pdf_sha, "bytes": len(content), "tlp": case.tlp},
+    )
+    session.commit()
+    filename = f"aleph-caso-{case.id}-informe.pdf"
+    return Response(content=content, media_type="application/pdf", headers={
+        "Content-Disposition": f'attachment; filename="{filename}"', "X-Aleph-SHA256": pdf_sha})

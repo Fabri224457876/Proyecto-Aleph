@@ -15,6 +15,8 @@ interface Queue {
   links: LinkOut[];
   entities: EntityOut[];
   relations: RelationOut[];
+  /** Nombre de las entidades que unen las relaciones propuestas, para titularlas. */
+  labels: Record<number, string>;
 }
 
 async function loadQueue(caseId: number): Promise<Queue> {
@@ -23,7 +25,11 @@ async function loadQueue(caseId: number): Promise<Queue> {
     ep.listEntities(caseId, { status: ["proposed"], limit: 200 }),
     ep.listRelations(caseId, { status: ["proposed"], limit: 200 }),
   ]);
-  return { links: links.items, entities: entities.items, relations: relations.items };
+  const ends = [...new Set(relations.items.flatMap((r) => [r.src_id, r.dst_id]))];
+  const found = await Promise.all(ends.map((id) => ep.getEntity(caseId, id).catch(() => null)));
+  const labels: Record<number, string> = {};
+  for (const entity of found) if (entity) labels[entity.id] = entity.label;
+  return { links: links.items, entities: entities.items, relations: relations.items, labels };
 }
 
 const SEVERITY_WEIGHT: Record<string, number> = { alta: 100, media: 80, baja: 60 };
@@ -68,14 +74,14 @@ const KIND_TONE: Record<QueueItem["kind"], Tone> = {
   contradiction: "warn",
 };
 
-function titleOf(item: QueueItem): string {
+function titleOf(item: QueueItem, labels: Record<number, string> = {}): string {
   switch (item.kind) {
     case "hypothesis":
       return `${item.link.account_a.handle} y ${item.link.account_b.handle}`;
     case "entity":
       return `${entityTypeLabel(item.entity.type)}: ${item.entity.label}`;
     case "relation":
-      return `Relación ${relationLabel(item.relation.type)}`;
+      return `${labels[item.relation.src_id] ?? `Entidad ${item.relation.src_id}`} → ${relationLabel(item.relation.type)} → ${labels[item.relation.dst_id] ?? `Entidad ${item.relation.dst_id}`}`;
     case "contradiction":
       return item.contradiction.subject || "Posible contradicción entre fuentes";
   }
@@ -308,7 +314,7 @@ export function RevisarPage() {
                     <Chip tone={KIND_TONE[item.kind]}>{KIND_LABEL[item.kind]}</Chip>
                     {confidenceChip(item)}
                   </div>
-                  <p className="item-title">{titleOf(item)}</p>
+                  <p className="item-title">{titleOf(item, queue.data?.labels)}</p>
                   <p className="item-meta">{whyOf(item)}</p>
                 </div>
                 <div className="item-actions">

@@ -7,6 +7,7 @@ import { Link } from "../../lib/router";
 import { useAsync } from "../../lib/useAsync";
 import { ApiError } from "../../api/client";
 import { errorMessage, plural } from "../../lib/format";
+import { relationLabel } from "../../lib/labels";
 
 const VERDICT_TONE = { plausible: "ok", dudosa: "warn", descartable: "bad" } as const;
 
@@ -19,7 +20,7 @@ function Hypothesis({ h, caseId }: { h: TlonHypothesis; caseId: number }) {
     <li className="item">
       <div className="item-main">
         <div className="item-title">
-          {h.src_label} <span className="muted">—{h.type}→</span> {h.dst_label}
+          {h.src_label} <span className="muted">— {relationLabel(h.type)} →</span> {h.dst_label}
         </div>
         <div className="item-meta">{h.evidence.explanation}</div>
         {h.review && (

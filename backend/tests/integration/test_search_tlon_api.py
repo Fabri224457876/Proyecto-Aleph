@@ -117,6 +117,23 @@ def test_preguntar_al_caso_cita_y_marca_lo_inventado(client, token, demo_case, l
         assert "cupón" not in json.dumps(audit.json())  # se guarda el hash, no la pregunta
 
 
+def test_preguntar_lleva_los_vinculos_de_cada_entidad_al_contexto(client, token, demo_case, mock_http):
+    seen: list[str] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        if "messages" not in body:  # embeddings
+            return _handler()(request)
+        seen.append(body["messages"][-1]["content"])
+        return httpx.Response(200, json={"choices": [{"message": {"content": "Se aloja en un servidor del caso."}}]})
+
+    app.dependency_overrides[llm_http] = lambda: mock_http(handle)
+    r = client.post(f"/api/cases/{demo_case}/ask", json={"question": "¿Dónde se aloja pagos-seguros.example?"},
+                    headers=token(ANALYST))
+    assert r.status_code == 200, r.text
+    assert any("Vínculos:" in m and "resuelve a 192.0.2.44" in m for m in seen)
+
+
 def test_preguntar_sin_llm_responde_503(client, token, demo_case):
     r = client.post(f"/api/cases/{demo_case}/ask", json={"question": "¿Qué pasó?"}, headers=token(ANALYST))
     assert r.status_code == 503 and "no respondió" in r.json()["detail"]

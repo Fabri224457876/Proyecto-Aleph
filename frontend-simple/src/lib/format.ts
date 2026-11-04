@@ -39,7 +39,9 @@ export function fmtDate(value: string | null | undefined): string {
 
 export function fmtDay(value: string | null | undefined): string {
   const date = parse(value);
-  return date ? dayFormat.format(date) : "sin fecha";
+  if (!date) return "sin fecha";
+  const text = dayFormat.format(date);
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 export function fmtTime(value: string | null | undefined): string {
@@ -107,4 +109,12 @@ export function propText(value: unknown): string {
 
 export function classNames(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
+}
+
+/** Recorta un texto sin cortar palabras a la mitad. */
+export function clip(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[,.;:·\s]+$/, "")}…`;
 }

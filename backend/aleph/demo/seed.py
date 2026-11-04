@@ -54,6 +54,7 @@ from aleph.core.models import (
     Finding,
     Post,
     Relation,
+    Source,
     User,
 )
 from aleph.core.schemas import (
@@ -63,7 +64,7 @@ from aleph.core.schemas import (
     FindingCreate,
     RelationRecord,
 )
-from aleph.funes.contradictions import explain_contradictions
+from aleph.funes.contradictions import READING_LABELS, explain_contradictions
 from aleph.funes.ner import extract_rule_entities
 from aleph.menard.synth import generate_world
 
@@ -261,7 +262,7 @@ def _findings(session: Session, case: Case, analyst: User, operator: list[tuple[
                             page_url=f"https://registro-ficticio.example/{claim.id}",
                             page_title="Afirmación para contradicciones", platform="generic",
                             detected_by="manual", captured_at=captured),
-            note=f"Afirmación: {claim.predicate} = {claim.value}. Fuente: {claim.source}.",
+            note=f"Afirmación: {claim.predicate.replace('_', ' ')} {claim.value}. Fuente: {claim.source}.",
         ), analyst.id)
         count += 1
     for contradiction in contradictions:
@@ -272,7 +273,7 @@ def _findings(session: Session, case: Case, analyst: User, operator: list[tuple[
                             page_title=f"Contradicción {contradiction.id}", platform="generic",
                             detected_by="funes", captured_at=captured),
             note=f"Severidad {contradiction.severity}. Lecturas posibles: "
-                 + "; ".join(r.kind for r in contradiction.readings) + ".",
+                 + "; ".join(READING_LABELS.get(r.kind, r.kind) for r in contradiction.readings) + ".",
         ), analyst.id)
         count += 1
     return count
@@ -293,6 +294,14 @@ def _techniques(session: Session, case: Case, analyst: User) -> tuple[int, int]:
 
 
 # ---------------------------------------------------------------- orquestación
+
+
+def _rate_sources(session: Session, case: Case) -> None:
+    for source in session.execute(select(Source).where(Source.case_id == case.id)).scalars():
+        for prefix, reliability, credibility in story.SOURCE_RATINGS:
+            if source.reference.startswith(prefix):
+                source.reliability, source.credibility = reliability, credibility
+                break
 
 
 def _count(session: Session, model, *where) -> int:
@@ -377,6 +386,7 @@ def seed(session: Session, *, data_dir: str | Path, demo_password: str | None = 
     contradictions = _contradictions(claims)
     _findings(session, case, analyst, operator, contradictions, claims)
     tech = _techniques(session, case, analyst)
+    _rate_sources(session, case)
     steps["expediente y ATT&CK"] = time.perf_counter() - t
 
     auditlog.record(session, "demo.seed", user_id=analyst.id, case_id=case.id, target=f"case:{case.id}",

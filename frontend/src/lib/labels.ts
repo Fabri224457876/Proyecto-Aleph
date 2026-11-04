@@ -164,6 +164,17 @@ const RELATION_LABEL: Record<string, string> = {
   miembro: "miembro de",
   ubicado_en: "ubicado en",
   pago_a: "pagó a",
+  associated_with: "asociado a",
+  uses: "usa",
+  indicates: "indica",
+  attributed_to: "atribuido a",
+  targets: "apunta a",
+  communicates_with: "se comunica con",
+  located_at: "ubicado en",
+  resolves_to: "resuelve a",
+  hosted_on: "alojado en",
+  registered_with: "registrado con",
+  member_of: "miembro de",
 };
 
 export function relationLabel(type: string): string {

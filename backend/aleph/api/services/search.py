@@ -17,8 +17,9 @@ import numpy as np
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from aleph.core.models import Account, AccountLink, Case, Entity, Finding, Post, Source, User
+from aleph.core.models import Account, AccountLink, Case, Entity, Finding, Post, Relation, Source, User
 from aleph.funes.client import FunesClient, LLMError, NonLocalEndpointError
+from aleph.funes.report import RELATIONS_ES
 from aleph.tlon.features import fold
 
 from ..deps import scope_to_user
@@ -208,6 +209,32 @@ def lexical_search(session: Session, user: User, query: str, *, case_id: int | N
                                 text=f"Hipótesis MENARD de mismo operador entre @{a} y @{b}, puntaje {link.score:.2f}, "
                                      f"estado {link.review_status}. {summary}"[:2000]))
     return hits
+
+
+def with_relations(session: Session, case_id: int, hits: list[Hit], *, per_entity: int = 8) -> None:
+    """Suma a cada entidad del contexto sus vínculos no descartados, para preguntas sobre relaciones
+    («¿dónde se aloja?», «¿quién usa qué?»): el texto de la entidad sola no los trae."""
+    ids = [h.id for h in hits if h.kind == "entity"]
+    if not ids:
+        return
+    rels = session.execute(select(Relation).where(
+        Relation.case_id == case_id, Relation.status != "rejected",
+        or_(Relation.src_id.in_(ids), Relation.dst_id.in_(ids)))).scalars().all()
+    other_ids = {r.dst_id for r in rels} | {r.src_id for r in rels}
+    labels = dict(session.execute(select(Entity.id, Entity.label).where(Entity.id.in_(other_ids))).all())
+    for hit in hits:
+        if hit.kind != "entity":
+            continue
+        lines = []
+        for r in (r for r in rels if hit.id in (r.src_id, r.dst_id)):
+            verb = RELATIONS_ES.get(r.type, r.type.replace("_", " "))
+            pending = " (propuesto, sin confirmar)" if r.status == "proposed" else ""
+            if r.src_id == hit.id:
+                lines.append(f"{verb} {labels.get(r.dst_id, r.dst_id)}{pending}")
+            else:
+                lines.append(f"{labels.get(r.src_id, r.src_id)} {verb} esta entidad{pending}")
+        if lines:
+            hit.text = f"{hit.text or hit.snippet} Vínculos: " + "; ".join(lines[:per_entity]) + "."
 
 
 def case_pool(session: Session, case_id: int, *, limit: int = 200) -> list[Hit]:

@@ -6,7 +6,7 @@ import { EntityPanel } from "../../components/EntityPanel";
 import { Button, Empty, ErrorBox, Loading, Notice, Panel, Help } from "../../components/ui";
 import { useAsync } from "../../lib/useAsync";
 import { fmtDate, fmtDateTime, fmtInt, plural, truncate } from "../../lib/format";
-import { POST_KIND_LABEL } from "../../lib/labels";
+import { POST_KIND_LABEL, platformLabel } from "../../lib/labels";
 
 async function loadPeople(caseId: number) {
   const [persons, accounts] = await Promise.all([
@@ -39,7 +39,7 @@ function AccountDetail({ account }: { account: AccountOut }) {
   return (
     <div className="stack">
       <div>
-        <p className="eyebrow">{account.platform}</p>
+        <p className="eyebrow">{platformLabel(account.platform)}</p>
         <h3 style={{ wordBreak: "break-word" }}>@{account.handle}</h3>
         {account.display_name && <p className="muted">{account.display_name}</p>}
       </div>
@@ -149,7 +149,7 @@ export function PeopleView() {
                 >
                   <span style={{ wordBreak: "break-all" }}>@{a.handle}</span>
                   <span className="small muted">
-                    {a.platform} · {plural(a.post_count, "publicación", "publicaciones")}
+                    {platformLabel(a.platform)} · {plural(a.post_count, "publicación", "publicaciones")}
                   </span>
                 </button>
               ))}

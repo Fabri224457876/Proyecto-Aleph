@@ -1,3 +1,4 @@
+import { platformLabel } from "../lib/labels";
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import * as ep from "../api/endpoints";
 import type { ConnectorOut, ToolOut } from "../api/contract";
@@ -230,7 +231,7 @@ export function ReunirPage() {
         <Notice tone="info" title={`El caso ya conoce "${handle}"`}>
           <p>
             Aparece en {known.length === 1 ? "una plataforma" : `${known.length} plataformas`}:{" "}
-            {known.map((k) => `${k.platform} (${fmtInt(k.posts)} ${k.posts === 1 ? "publicación" : "publicaciones"})`).join(", ")}.
+            {known.map((k) => `${platformLabel(k.platform)} (${fmtInt(k.posts)} ${k.posts === 1 ? "publicación" : "publicaciones"})`).join(", ")}.
           </p>
           <p className="small">
             <Link to={`/casos/${ctx.caseId}/entender?vista=personas`}>Ver personas y cuentas del caso</Link>

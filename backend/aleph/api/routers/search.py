@@ -118,6 +118,7 @@ def ask(body: AskIn, case: ReadCase, session: DB, user: AnyUser, settings: Setti
     if not hits and status != "usado":
         # Sin coincidencias por texto: al menos lo más reciente del caso, para que el modelo diga qué hay.
         hits = search_service.case_pool(session, case.id, limit=4)[: body.k]
+    search_service.with_relations(session, case.id, hits)
     fragments = [Fragment(id=h.ref, kind=h.kind, title=h.title, text=h.text or h.snippet) for h in hits]
 
     client = make_client(settings, llm)

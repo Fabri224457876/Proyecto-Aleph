@@ -20,7 +20,7 @@ export interface ResultItem {
 }
 
 function kindLabel(kind: string): string {
-  return (ENTITY_TYPE_LABEL as Record<string, string>)[kind] ?? (kind === "text" ? "Texto" : kind);
+  return (ENTITY_TYPE_LABEL as Record<string, string>)[kind] ?? (kind === "text" ? "Texto" : kind === "attack" ? "Técnica ATT&CK" : kind);
 }
 
 /** Vista previa de datachunks: la persona elige cuáles incorporar al expediente. */

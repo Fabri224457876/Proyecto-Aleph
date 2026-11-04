@@ -593,7 +593,7 @@ a:hover {
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
 }
 .stat {
@@ -1209,7 +1209,6 @@ kbd {
   font-weight: 700;
   color: var(--muted);
   font-size: 0.95rem;
-  text-transform: capitalize;
 }
 .timeline li.event {
   border-left: 3px solid var(--border);
@@ -1230,8 +1229,14 @@ kbd {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
-  height: 520px;
+  height: 640px;
   overflow: hidden;
+}
+.graph-toggle {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
 }
 .graph-canvas {
   position: absolute;

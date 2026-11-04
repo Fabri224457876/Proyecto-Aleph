@@ -212,3 +212,14 @@ def findings_plan(accounts: list[tuple[str, str]]) -> list[dict]:
          "page_url": "https://notas-ficticias.example/caso/1", "note": "Nota de trabajo del analista."},
     ]
     return plan
+
+
+# Valoración Admiralty de las fuentes ficticias (fiabilidad A-F, credibilidad 1-6), por prefijo de
+# referencia. Es parte de la historia: un registro de accesos vale más que un foro anónimo.
+SOURCE_RATINGS: list[tuple[str, str, str]] = [
+    ("https://registro-ficticio.example/", "B", "2"),
+    ("https://notas-ficticias.example/", "B", "2"),
+    ("https://red-social-ficticia.example/", "C", "3"),
+    ("https://foro-ficticio.example/", "D", "3"),
+    ("MITRE ATT&CK", "A", "2"),
+]

@@ -8,7 +8,7 @@ import pytest
 from aleph.core.schemas import ClusterResult, EntityRecord, PairResult, RelationRecord
 from aleph.funes.contradictions import Contradiction, Reading
 from aleph.funes.language import find_categorical
-from aleph.funes.report import CaseData, SourceRef, build_inventory, draft_report, summarize_case
+from aleph.funes.report import LLM_LIMITS, CaseData, SourceRef, build_inventory, draft_report, summarize_case
 
 HEADINGS = ["## 1. Resumen ejecutivo", "## 2. Hallazgos", "## 3. Hipótesis y nivel de confianza",
             "## 4. Vacíos de información", "## 5. Fuentes"]
@@ -70,7 +70,7 @@ def test_inventory_assigns_canonical_ids():
     assert by_id["E1"].original == "n1" and "persona: Juan Pérez" in by_id["E1"].text
     assert by_id["R1"].text.startswith("E1 --member_of--> E2")
     assert by_id["H1"].confidence == "media" and "mismo operador" in by_id["H1"].text
-    assert "suplantacion, error_de_carga, homonimos" in by_id["C1"].text
+    assert "suplantación, error de carga, homónimos" in by_id["C1"].text
     assert len(warnings) == 1 and "1 relaciones quedaron fuera" in warnings[0]
 
 
@@ -80,6 +80,30 @@ def test_inventory_truncates_large_cases_with_warning():
     inventory, warnings = build_inventory(case, max_entities=50)
     assert len(inventory) == 50 and "50 entidades de mayor confianza de 300" in warnings[0]
     assert inventory[0].text.startswith("persona: P250")  # se conservan las de mayor confianza, en orden
+
+
+def test_inventario_compacto_para_el_llm_prioriza_la_estructura():
+    case = CaseData(
+        entities=[EntityRecord(type="account", label=f"x:cuenta{i}", confidence=1.0, ref=f"a{i}") for i in range(60)]
+        + [EntityRecord(type="domain", label="malo.example", confidence=0.8, ref="d"),
+           EntityRecord(type="malware", label="Troyano", confidence=0.7, ref="m")],
+        sources=[SourceRef(id=f"S{i}", title=f"fuente {i}", reliability="F6" if i else "B2") for i in range(25)],
+    )
+    inventory, warnings = build_inventory(case, **LLM_LIMITS)
+    texts = [i.text for i in inventory if i.kind == "entidad"]
+    assert len(texts) == 40  # sobran cuentas: entran primero el malware y el dominio
+    assert any(t.startswith("malware: Troyano") for t in texts) and any(t.startswith("dominio: malo.example") for t in texts)
+    sources = [i for i in inventory if i.kind == "fuente"]
+    assert len(sources) == 10 and "B2" in sources[0].text  # las mejor valoradas primero
+    assert any("10 fuentes de 25" in w for w in warnings)
+
+
+async def test_report_pide_ids_obligatorios_al_modelo(make_client):
+    client, server = make_client([GOOD])
+    await draft_report(make_case(), client)
+    fmt = server.chat_requests[0]["response_format"]["json_schema"]["schema"]
+    statement = fmt["properties"]["hallazgos"]["items"]
+    assert statement["required"] == ["texto", "ids"] and statement["properties"]["ids"]["type"] == "array"
 
 
 # --- Informe -----------------------------------------------------------------------------------
@@ -99,7 +123,7 @@ async def test_report_structure_and_references(make_client):
     assert "- Hay una contradicción espacio-temporal sin resolver. [C1]" in md
     assert "- **Confianza media.** Es posible que las cuentas" in md
     assert "- [F1] Nota periodística — https://ejemplo.org/n (valoración: B2)" in md
-    assert "## Anexo. Datos citados" in md and "- [R1] E1 --member_of--> E2" in md
+    assert "## Anexo. Datos citados" in md and "- [R1] Juan Pérez miembro de Cooperativa El Aleph (confianza 0,70)" in md
     assert "SIN RESPALDO" not in md and "ID INEXISTENTE" not in md and "REVISAR" not in md
     # Toda afirmación de las tres primeras secciones tiene al menos un id válido.
     for section in ("resumen_ejecutivo", "hallazgos", "hipotesis"):

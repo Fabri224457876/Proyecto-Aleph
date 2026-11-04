@@ -5,6 +5,23 @@ Corridas de las herramientas, los conectores y la IA contra servicios reales, po
 rangos de ejemplo, vectores de prueba, cuentas oficiales o de prueba de cada plataforma. Nunca
 personas. IA: Ollama con qwen3:8b y bge-m3 en el nodo con GPU.
 
+## 02/11/2026
+
+IA local: Ollama 0.24 con qwen3:8b (sin razonamiento) y bge-m3 en el nodo con GPU, sobre el caso de
+demostración recién sembrado.
+
+| Función | Resultado | Tiempo |
+|---|---|---|
+| Contradicciones | **OK en 3 de 3 corridas**: con el prompt corregido el 28/10, extrae bien las dos afirmaciones (Rosario 14:00, Ushuaia 14:20) y detecta la imposibilidad espacio-temporal | 7,6–8,1 s |
+| Preguntar al caso | OK. Antes respondía «no se mencionan servidores» a «¿en qué servidores se alojan los dominios?»: el contexto traía las entidades sin sus vínculos. Ahora cada entidad lleva sus relaciones y la respuesta lista dominio → IP con citas válidas | 11,5 s |
+| Informe | **Corregido.** Ollama recorta cada pedido a 4096 tokens por el principio, y el inventario completo del caso (157 datos) se comía las instrucciones: el modelo inventaba otro formato o dejaba todo sin citas. Ahora el modelo recibe un inventario compacto (lo estructural primero) y un esquema de salida con `ids` obligatorio: 11 y 13 afirmaciones en dos corridas, todas con citas válidas | 12,3–12,8 s |
+| TLÖN | OK con embeddings bge-m3: el extremo correcto queda entre las 5 primeras opciones en el 86 % de los vínculos ocultos (azar: 39 %); la hipótesis más fuerte es el vínculo omitido a propósito en la siembra. FUNES revisó las propuestas | 11,2 s |
+| Búsqueda por significado | OK con el tope de 1000 caracteres por texto | — |
+
+Observación del nodo: después de un reinicio, el contenedor `aleph-ollama` quedó corriendo pero sin
+el puerto publicado (está atado a la IP de Tailscale, que todavía no existía cuando arrancó Docker).
+Se resuelve con `docker restart aleph-ollama`.
+
 ## 28/10/2026
 
 ### Herramientas OSINT

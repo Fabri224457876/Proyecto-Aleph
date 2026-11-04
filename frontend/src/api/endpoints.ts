@@ -32,6 +32,9 @@ export const login = (username: string, password: string) =>
 
 export const me = () => api<User>("/api/auth/me");
 
+/** Solo administrador: para mostrar nombres en lugar de números de usuario. */
+export const listUsers = () => api<Page<User>>("/api/users", { query: { limit: 200 } });
+
 // ---------------------------------------------------------------- casos
 
 export interface CaseListParams {

@@ -228,7 +228,9 @@ def habit_signal(c: Corpus, group: str, name: str, family: str, rel: np.ndarray,
                     f"En contra, difieren — {lab}: A {_fmt(raw[i, k], kind)}, "
                     f"B {_fmt(raw[j, k], kind)}."
                 )))
-        return (f"{title}: {n_pos} rasgos coinciden de forma poco común y {n_neg} difieren, "
+        coinciden = "1 rasgo coincide" if n_pos == 1 else f"{n_pos} rasgos coinciden"
+        difieren = "1 difiere" if n_neg == 1 else f"{n_neg} difieren"
+        return (f"{title}: {coinciden} de forma poco común y {difieren}, "
                 f"sobre {int(both.sum())} comparables."), ev
 
     return _finish(c, name, family, score, avail, explain)

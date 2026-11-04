@@ -2,7 +2,7 @@ import * as ep from "../api/endpoints";
 import type { CaseOut } from "../api/types";
 import { Button, Chip, Empty, ErrorBox, Loading, PageTitle, Panel, StatusChip, TlpChip } from "../components/ui";
 import { useAuth } from "../lib/auth";
-import { fmtDate, plural } from "../lib/format";
+import { clip, fmtDate, plural } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 import { Link } from "../lib/router";
 import { ROLE_LABEL } from "../lib/labels";
@@ -79,7 +79,7 @@ export function HomePage() {
                       </Link>
                       <p className="item-meta">
                         Abierto el {fmtDate(c.created_at)}
-                        {c.description ? ` · ${c.description.slice(0, 120)}` : ""}
+                        {c.description ? ` · ${clip(c.description, 140)}` : ""}
                       </p>
                     </div>
                     <div className="row">

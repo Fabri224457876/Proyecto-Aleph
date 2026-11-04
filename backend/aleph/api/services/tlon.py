@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from aleph.core.models import Account, Entity, Relation
 from aleph.funes.client import LLMError
 from aleph.funes.reasoning import InventoryItem, Review, Statement, review_hypotheses
+from aleph.funes.report import RELATIONS_ES
 from aleph.funes.structured import StructuredOutputError
 from aleph.tlon import TlonEdge, TlonInput, TlonNode, propose
 from aleph.tlon.features import node_text
@@ -113,13 +114,16 @@ def _inventory(session: Session, case_id: int, data: TlonInput,
     rels = session.execute(select(Relation).where(Relation.case_id == case_id, Relation.status != "rejected",
                                                   Relation.src_id.in_(chosen), Relation.dst_id.in_(chosen))
                            .order_by(Relation.id).limit(INVENTORY_RELATIONS)).scalars().all()
-    items += [InventoryItem(id=f"R{r.id}", text=f"E{r.src_id} -[{r.type}]-> E{r.dst_id}"
+    label = {n.id: n.label for n in chosen.values()}
+    verb = lambda t: RELATIONS_ES.get(t, t.replace("_", " "))  # noqa: E731
+    items += [InventoryItem(id=f"R{r.id}", text=f"E{r.src_id} ({label[r.src_id]}) {verb(r.type)} E{r.dst_id} ({label[r.dst_id]})"
                             + ("" if r.status == "confirmed" else " (propuesta)")) for r in rels]
     by_ref = {}
     for i, h in enumerate(hypotheses, 1):
         ref = f"T{i}"
         by_ref[ref] = h
-        items.append(InventoryItem(id=ref, text=f"HIPÓTESIS DE TLÖN: E{h.src} -[{h.type}]-> E{h.dst}. "
+        items.append(InventoryItem(id=ref, text=f"HIPÓTESIS DE TLÖN: E{h.src} ({label.get(h.src, h.src)}) "
+                                                f"{verb(h.type)} E{h.dst} ({label.get(h.dst, h.dst)}). "
                                                 f"{h.evidence.explanation}"))
     return items, by_ref
 

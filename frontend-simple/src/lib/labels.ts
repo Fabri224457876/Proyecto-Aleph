@@ -164,7 +164,38 @@ const RELATION_LABEL: Record<string, string> = {
   miembro: "miembro de",
   ubicado_en: "ubicado en",
   pago_a: "pagó a",
+  associated_with: "asociado a",
+  uses: "usa",
+  indicates: "indica",
+  attributed_to: "atribuido a",
+  targets: "apunta a",
+  communicates_with: "se comunica con",
+  located_at: "ubicado en",
+  resolves_to: "resuelve a",
+  hosts: "aloja",
+  owns: "es dueño de",
+  mentions: "menciona",
+  member_of: "miembro de",
+  hosted_on: "alojado en",
+  registered_with: "registrado con",
 };
+
+const PLATFORM_LABEL: Record<string, string> = {
+  twitter: "X (Twitter)",
+  x: "X (Twitter)",
+  instagram: "Instagram",
+  discord: "Discord",
+  bluesky: "Bluesky",
+  mastodon: "Mastodon",
+  reddit: "Reddit",
+  github: "GitHub",
+  telegram: "Telegram",
+  generic: "Web",
+};
+
+export function platformLabel(platform: string): string {
+  return PLATFORM_LABEL[platform?.toLowerCase()] ?? platform;
+}
 
 export function relationLabel(type: string): string {
   return RELATION_LABEL[type] ?? type.replace(/_/g, " ");

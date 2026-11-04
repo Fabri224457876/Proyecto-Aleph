@@ -307,13 +307,17 @@ class FunesClient:
         wrap_list_as: str | None = None,
         temperature: float = 0.0,
         max_tokens: int | None = None,
+        decode_schema: dict[str, Any] | None = None,
     ) -> T:
         """Chat con salida validada contra `schema`.
 
+        `decode_schema` es el JSON schema que guía la decodificación del modelo cuando `schema` es
+        tolerante (campos opcionales o con varias formas): con decodificación restringida, un modelo
+        chico omite lo que el esquema no exige. La validación final sigue siendo contra `schema`.
         Si la respuesta no valida, se reintenta una vez pasándole al modelo el error.
         Lanza `StructuredOutputError` si tampoco así, o `LLMError` si falla el endpoint.
         """
-        json_schema = schema.model_json_schema()
+        json_schema = decode_schema or schema.model_json_schema()
         current = list(messages)
         for attempt in range(2):
             raw = await self.chat(

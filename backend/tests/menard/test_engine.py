@@ -153,7 +153,7 @@ def test_cross_platform_pairs_degrade_gracefully():
     assert not sig["behavior.hashtags"].available and not sig["behavior.client"].available
     assert not sig["temporal.hourly"].available and not sig["network.mutual_mentions"].available
     assert sig["stylometry.char_ngrams"].available and sig["profile.handle"].score > 0.9
-    assert 0.0 <= r.score <= 1.0 and "discord:tinchocai" in r.summary
+    assert 0.0 <= r.score <= 1.0 and "@tinchocai (Discord)" in r.summary
 
 
 def test_degenerate_inputs():

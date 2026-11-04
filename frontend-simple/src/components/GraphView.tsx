@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { GraphOut } from "../api/types";
 import { relationLabel } from "../lib/labels";
 
@@ -9,6 +9,17 @@ interface Props {
   pathEdgeIds: number[];
   onSelect: (id: number) => void;
 }
+
+// Color por familia de tipo: identidad, contacto, infraestructura, organización y lugar, amenaza, finanzas.
+const TYPE_COLOR: Record<string, string> = {
+  person: "#3b6fb6", alias: "#3b6fb6",
+  account: "#1f8a7a", email: "#1f8a7a", phone: "#1f8a7a",
+  domain: "#7357b8", ip: "#7357b8", url: "#7357b8",
+  organization: "#a67c1f", location: "#a67c1f", event: "#5f6b78",
+  hash: "#6b7785", document: "#6b7785", vehicle: "#6b7785",
+  malware: "#c0394b", vulnerability: "#c0394b",
+  wallet: "#a3478d", bank_account: "#a3478d",
+};
 
 function cssVar(name: string, fallback: string): string {
   const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -21,6 +32,14 @@ export function GraphView({ graph, selectedId, pathIds, pathEdgeIds, onSelect }:
   const cyRef = useRef<import("cytoscape").Core | null>(null);
   const selectRef = useRef(onSelect);
   selectRef.current = onSelect;
+  const [showIsolated, setShowIsolated] = useState(false);
+  // Las entidades sin vínculos (cuentas sueltas, sobre todo) se ocultan por defecto: tapan la estructura.
+  const linked = useMemo(() => new Set(graph.edges.flatMap((e) => [e.source, e.target])), [graph]);
+  const isolated = graph.nodes.length - graph.nodes.filter((n) => linked.has(n.id)).length;
+  const nodes = useMemo(
+    () => graph.nodes.filter((n) => showIsolated || linked.has(n.id) || n.id === selectedId),
+    [graph, linked, showIsolated, selectedId],
+  );
 
   // Dibuja el grafo cuando cambian los datos o el tema.
   useEffect(() => {
@@ -32,22 +51,33 @@ export function GraphView({ graph, selectedId, pathIds, pathEdgeIds, onSelect }:
       const cy = cytoscape({
         container: container.current,
         elements: [
-          ...graph.nodes.map((n) => ({
-            data: { id: String(n.id), label: n.label.length > 26 ? `${n.label.slice(0, 25)}…` : n.label, status: n.status },
+          ...nodes.map((n) => ({
+            data: {
+              id: String(n.id),
+              label: n.label.length > 26 ? `${n.label.slice(0, 25)}…` : n.label,
+              status: n.status,
+              color: TYPE_COLOR[n.type] ?? "#5f6b78",
+              size: Math.min(44, 22 + 3 * Math.sqrt(n.degree ?? 0)),
+            },
           })),
-          ...graph.edges.map((e) => ({
+          ...graph.edges.filter((e) => nodes.some((n) => n.id === e.source) && nodes.some((n) => n.id === e.target)).map((e) => ({
             data: { id: `e${e.id}`, source: String(e.source), target: String(e.target), label: relationLabel(e.type), status: e.status },
           })),
         ],
-        layout: { name: "cose", animate: false, padding: 24, nodeRepulsion: () => 9000 },
+        // Separación generosa para que las etiquetas no se pisen.
+        layout: {
+          name: "cose", animate: false, padding: 32, nodeRepulsion: () => 26000, nodeOverlap: 40,
+          idealEdgeLength: () => 95, edgeElasticity: () => 60, gravity: 0.4, numIter: 1500,
+          componentSpacing: 60,
+          // Que ocupe el ancho del recuadro y no una columna angosta.
+          boundingBox: { x1: 0, y1: 0, w: container.current.clientWidth * 1.4, h: container.current.clientHeight },
+        } as import("cytoscape").LayoutOptions,
         minZoom: 0.3,
         maxZoom: 2.5,
-        wheelSensitivity: 0.3,
       });
       cyRef.current = cy;
 
       const applyStyle = () => {
-        const accent = cssVar("--accent", "#1f5fa8");
         const text = cssVar("--text", "#17202b");
         const muted = cssVar("--muted", "#535e6c");
         const warn = cssVar("--warn", "#8a5300");
@@ -57,16 +87,19 @@ export function GraphView({ graph, selectedId, pathIds, pathEdgeIds, onSelect }:
           {
             selector: "node",
             style: {
-              "background-color": accent,
+              "background-color": "data(color)",
               label: "data(label)",
               color: text,
-              "font-size": 11,
+              "font-size": 13,
+              "min-zoomed-font-size": 7,
               "text-valign": "bottom",
               "text-margin-y": 4,
               "text-wrap": "ellipsis",
               "text-max-width": "120px",
-              width: 22,
-              height: 22,
+              width: "data(size)",
+              height: "data(size)",
+              "border-width": 2,
+              "border-color": surface,
               "text-background-color": surface,
               "text-background-opacity": 0.85,
               "text-background-padding": "2px",
@@ -84,7 +117,8 @@ export function GraphView({ graph, selectedId, pathIds, pathEdgeIds, onSelect }:
               "target-arrow-shape": "triangle",
               "curve-style": "bezier",
               label: "data(label)",
-              "font-size": 9,
+              "font-size": 10,
+              "min-zoomed-font-size": 9,
               color: muted,
               "text-background-color": surface,
               "text-background-opacity": 0.85,
@@ -118,7 +152,7 @@ export function GraphView({ graph, selectedId, pathIds, pathEdgeIds, onSelect }:
     };
     // Los resaltados se aplican en el efecto siguiente; reconstruir por datos y tema alcanza.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [graph]);
+  }, [graph, nodes]);
 
   // Resalta selección y camino sin volver a dibujar.
   useEffect(() => {
@@ -136,6 +170,11 @@ export function GraphView({ graph, selectedId, pathIds, pathEdgeIds, onSelect }:
   return (
     <div className="graph-wrap" role="region" aria-label="Mapa de conexiones del caso">
       <div ref={container} className="graph-canvas" />
+      {isolated > 0 && (
+        <button type="button" className="btn btn-small graph-toggle" onClick={() => setShowIsolated((v) => !v)}>
+          {showIsolated ? "Ocultar" : "Mostrar"} {isolated} sin conexiones
+        </button>
+      )}
     </div>
   );
 }

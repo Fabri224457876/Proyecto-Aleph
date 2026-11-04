@@ -4,6 +4,8 @@ from collections import defaultdict
 
 import numpy as np
 
+from aleph.funes.report import RELATIONS_ES
+
 from .features import build_features, fold
 from .model import Jepa
 from .schemas import (
@@ -200,7 +202,7 @@ def propose(data: TlonInput, params: TlonParams | None = None) -> TlonReport:
         similar = [nodes[nbrs[k]].label for k in np.argsort(-sim)[:2] if sim[k] > 0.5]
         common = [nodes[k].label for k in sorted(full_neighbors[u] & full_neighbors[v])][:5]
         shared = _shared_attributes(nodes[u], nodes[v])
-        parts = [(f"El modelo del caso espera un vínculo «{name}» entre {nodes[u].label} y {nodes[v].label}"
+        parts = [(f"El modelo del caso espera un vínculo «{RELATIONS_ES.get(name, name.replace('_', ' '))}» entre {nodes[u].label} y {nodes[v].label}"
                   f" (más fuerte que el {percentile:.0%} de los vínculos reales de ese tipo).")]
         if common:
             parts.append(f"Tienen {len(common)} vecino(s) en común: {', '.join(common[:3])}.")

@@ -12,8 +12,7 @@ import {
   relationLabel,
   SIGNAL_FAMILY_LABEL,
   signalLabel,
-  ITEM_STATUS_LABEL,
-} from "../../lib/labels";
+  ITEM_STATUS_LABEL, platformLabel } from "../../lib/labels";
 import { Link } from "../../lib/router";
 
 export type QueueItem =
@@ -58,7 +57,7 @@ function topSignals(signals: SignalResult[]): SignalResult[] {
 function AccountCard({ account }: { account: LinkOut["account_a"] }) {
   return (
     <div className="account-card">
-      <span className="chip">{account.platform}</span>
+      <span className="chip">{platformLabel(account.platform)}</span>
       <span className="handle">@{account.handle}</span>
       {account.display_name && <span className="muted">{account.display_name}</span>}
     </div>
@@ -119,7 +118,9 @@ function HypothesisBody({ link }: { link: LinkOut }) {
             <p className="small">{signal.explanation}</p>
             {signal.evidence[0] && (
               <p className="signal-evidence">
-                Ejemplo: {signal.evidence[0].description}. A: “{signal.evidence[0].a}”. B: “{signal.evidence[0].b}”.
+                Ejemplo: {signal.evidence[0].description.replace(/\.+$/, "")}.
+                {signal.evidence[0].a && <> A: “{signal.evidence[0].a}”.</>}
+                {signal.evidence[0].b && <> B: “{signal.evidence[0].b}”.</>}
               </p>
             )}
           </div>

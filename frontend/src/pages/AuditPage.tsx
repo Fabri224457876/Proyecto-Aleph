@@ -6,6 +6,7 @@ import { Icon } from "../components/Icon";
 import { fmtDateTime, fmtInt, isoTitle, shortHash, truncate } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 import { useToast } from "../lib/toast";
+import { useAuth } from "../lib/auth";
 
 const PAGE_SIZE = 50;
 
@@ -35,6 +36,10 @@ export function AuditPage() {
 
   const verify = useAsync(() => endpoints.verifyAudit(), []);
   const cases = useAsync(() => endpoints.listCases({ limit: 200 }), []);
+  const { isAdmin } = useAuth();
+  // El auditor no puede listar usuarios: ve el número, como figura en la cadena.
+  const users = useAsync(() => (isAdmin ? endpoints.listUsers() : Promise.resolve(null)), [isAdmin]);
+  const userName = (id: number) => users.data?.items.find((u) => u.id === id)?.username ?? `#${id}`;
 
   const events = useAsync(
     () =>
@@ -200,7 +205,7 @@ export function AuditPage() {
                     <td className="mono" title={isoTitle(event.ts)}>
                       {fmtDateTime(event.ts)}
                     </td>
-                    <td className="mono">{event.user_id ? `#${event.user_id}` : <span className="dim">sistema</span>}</td>
+                    <td className="mono">{event.user_id ? userName(event.user_id) : <span className="dim">sistema</span>}</td>
                     <td className="mono">{event.case_id ? `#${event.case_id}` : <span className="dim">—</span>}</td>
                     <td>
                       <Badge tone={event.action.startsWith("auth.denied") || event.action.endsWith(".failed") ? "bad" : "neutral"}>{event.action}</Badge>
@@ -236,7 +241,7 @@ export function AuditPage() {
             <dt>Fecha (UTC)</dt>
             <dd className="mono">{detail.ts}</dd>
             <dt>Usuario</dt>
-            <dd className="mono">{detail.user_id ? `#${detail.user_id}` : "sistema"}</dd>
+            <dd className="mono">{detail.user_id ? userName(detail.user_id) : "sistema"}</dd>
             <dt>Caso</dt>
             <dd className="mono">{detail.case_id ? `#${detail.case_id}` : "—"}</dd>
             <dt>Objetivo</dt>
