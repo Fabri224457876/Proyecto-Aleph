@@ -297,6 +297,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000000,
               "minimum": 0,
               "description": "Desplazamiento desde el primer resultado",
               "default": 0,
@@ -722,6 +723,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000000,
               "minimum": 0,
               "description": "Desplazamiento desde el primer resultado",
               "default": 0,
@@ -1453,6 +1455,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000000,
               "minimum": 0,
               "description": "Desplazamiento desde el primer resultado",
               "default": 0,
@@ -1666,6 +1669,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000000,
               "minimum": 0,
               "description": "Desplazamiento desde el primer resultado",
               "default": 0,
@@ -2124,6 +2128,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000000,
               "minimum": 0,
               "description": "Desplazamiento desde el primer resultado",
               "default": 0,
@@ -3021,6 +3026,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000000,
               "minimum": 0,
               "description": "Desplazamiento desde el primer resultado",
               "default": 0,
@@ -4063,6 +4069,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000000,
               "minimum": 0,
               "description": "Desplazamiento desde el primer resultado",
               "default": 0,
@@ -4493,6 +4500,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000000,
               "minimum": 0,
               "description": "Desplazamiento desde el primer resultado",
               "default": 0,
@@ -4800,6 +4808,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000000,
               "minimum": 0,
               "description": "Desplazamiento desde el primer resultado",
               "default": 0,
@@ -5763,6 +5772,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000000,
               "minimum": 0,
               "description": "Desplazamiento desde el primer resultado",
               "default": 0,
@@ -6342,6 +6352,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000000,
               "minimum": 0,
               "description": "Desplazamiento desde el primer resultado",
               "default": 0,
@@ -6704,6 +6715,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000000,
               "minimum": 0,
               "description": "Desplazamiento desde el primer resultado",
               "default": 0,
@@ -6994,6 +7006,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000000,
               "minimum": 0,
               "description": "Desplazamiento desde el primer resultado",
               "default": 0,
@@ -9317,6 +9330,103 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TlonRunOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no permite la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (o no pertenece al caso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/tlon/jobs": {
+      "post": {
+        "tags": [
+          "TLÖN"
+        ],
+        "summary": "Correr TLÖN en segundo plano: responde enseguida con el trabajo, que se sigue en GET /jobs/{id}",
+        "operationId": "start_job_api_cases__case_id__tlon_jobs_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TlonRunIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobOut"
                 }
               }
             }
@@ -14189,6 +14299,7 @@
             "anyOf": [
               {
                 "type": "integer",
+                "maximum": 10000.0,
                 "minimum": 0.0
               },
               {
@@ -14251,6 +14362,7 @@
             "anyOf": [
               {
                 "type": "integer",
+                "maximum": 10000.0,
                 "minimum": 0.0
               },
               {

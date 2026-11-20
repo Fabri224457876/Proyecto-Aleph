@@ -12,12 +12,15 @@ from .. import auditlog
 from ..deps import DB, CurrentUser, ReadCase, SettingsDep, WriteCase
 from ..errors import NotFound
 from ..routing import make_router
+from ..schemas import JobOut
 from ..services import tlon as tlon_service
+from ..services.background import Runner, job_runner
 from ..services.outbound import llm_http
 from ..services.proposals import record_job
 
 router = make_router(prefix="/cases/{case_id}/tlon", tags=["TLÖN"])
 LlmDep = Annotated[httpx.AsyncClient | None, Depends(llm_http)]
+RunnerDep = Annotated[Runner, Depends(job_runner)]
 
 
 @router.post("/run", response_model=tlon_service.TlonRunOut,
@@ -27,14 +30,21 @@ def run(body: tlon_service.TlonRunIn, case: WriteCase, session: DB, user: Curren
     out = tlon_service.run(session, case, user.id, body, settings=settings, http=llm)
     job = record_job(session, case.id, "tlon", params=body.model_dump(), user_id=user.id,
                      result=out.model_dump(mode="json"))
-    auditlog.record(
-        session, "tlon.run", user_id=user.id, case_id=case.id, target=f"job:{job.id}",
-        detail={"status": out.status, "nodes": out.nodes, "edges": out.edges, "hypotheses": len(out.hypotheses),
-                "created_relations": out.created_relations, "llm_status": out.llm_status,
-                "embeddings": out.embeddings_status, "source_id": out.source_id, "quality": out.quality},
-    )
+    auditlog.record(session, "tlon.run", user_id=user.id, case_id=case.id, target=f"job:{job.id}",
+                    detail=tlon_service.audit_detail(out))
     session.commit()
     return out
+
+
+@router.post("/jobs", response_model=JobOut, status_code=202,
+             summary="Correr TLÖN en segundo plano: responde enseguida con el trabajo, que se sigue en GET /jobs/{id}")
+def start_job(body: tlon_service.TlonRunIn, case: WriteCase, session: DB, user: CurrentUser, settings: SettingsDep,
+              llm: LlmDep, runner: RunnerDep) -> Job:
+    job = tlon_service.enqueue(session, case, user.id, body)
+    session.commit()
+    # El resultado queda en el trabajo (status "done") y GET /latest lo lee igual que el de /run
+    runner(tlon_service.execute_job, session.get_bind(), job.id, user.id, body, settings, llm)
+    return job
 
 
 @router.get("/latest", response_model=tlon_service.TlonRunOut, summary="Resultado de la última corrida de TLÖN")

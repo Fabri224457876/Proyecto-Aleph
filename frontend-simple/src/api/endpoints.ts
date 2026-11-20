@@ -497,4 +497,8 @@ export const runLookupAction = (action: LookupAction) => {
 export const tlonRun = (caseId: number, body: { use_llm?: boolean; max_hypotheses?: number; min_percentile?: number } = {}) =>
   api<TlonRunOut>(`/api/cases/${caseId}/tlon/run`, { method: "POST", body });
 
+/** Corre TLÖN en segundo plano: responde enseguida con el trabajo (en cola); se sigue con `getJob`. */
+export const tlonStart = (caseId: number, body: { use_llm?: boolean; max_hypotheses?: number; min_percentile?: number } = {}) =>
+  api<JobOut>(`/api/cases/${caseId}/tlon/jobs`, { method: "POST", body });
+
 export const tlonLatest = (caseId: number) => api<TlonRunOut>(`/api/cases/${caseId}/tlon/latest`);

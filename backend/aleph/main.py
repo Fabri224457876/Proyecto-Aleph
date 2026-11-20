@@ -3,8 +3,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from aleph.api import configure_app, router
+from aleph.api.services import tlon as tlon_service
 from aleph.core.config import get_settings
-from aleph.core.db import init_db
+from aleph.core.db import SessionLocal, init_db
 
 _DEV_SECRET = "dev-only-change-me"
 
@@ -12,6 +13,10 @@ _DEV_SECRET = "dev-only-change-me"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    with SessionLocal() as session:
+        # Un trabajo en curso murió con el proceso anterior: se marca fallido en vez de quedar «corriendo» para siempre
+        if tlon_service.fail_orphans(session):
+            session.commit()
     yield
 
 

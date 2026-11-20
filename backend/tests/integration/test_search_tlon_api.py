@@ -5,12 +5,16 @@ clave y /chat/completions responde según el prompt (revisión de TLÖN o pregun
 """
 
 import json
+import threading
 
 import httpx
 import numpy as np
 import pytest
 
+from aleph.api.errors import EngineUnavailable
 from aleph.api.services import search as search_service
+from aleph.api.services import tlon as tlon_service
+from aleph.api.services.background import job_runner, thread_runner
 from aleph.api.services.outbound import llm_http
 from aleph.main import app
 
@@ -257,3 +261,132 @@ def test_tlon_sin_llm_igual_propone_con_aviso(client, token, demo_case):
 def test_tlon_auditor_no_puede_correr(client, token, demo_case):
     r = client.post(f"/api/cases/{demo_case}/tlon/run", json={}, headers=token("auditor-demo"))
     assert r.status_code == 403
+
+
+# --- TLÖN en segundo plano ----------------------------------------------------------------------
+
+
+@pytest.fixture
+def inline_jobs():
+    """Los trabajos corren en el acto, en el mismo hilo: sin esperas ni carreras en las pruebas."""
+    app.dependency_overrides[job_runner] = lambda: (lambda fn, *args: fn(*args))
+
+
+@pytest.fixture
+def queued_jobs():
+    """Una cola que solo anota: el trabajo queda «en cola» hasta que la prueba lo ejecuta."""
+    pending: list = []
+    app.dependency_overrides[job_runner] = lambda: (lambda fn, *args: pending.append((fn, args)))
+    return pending
+
+
+def _tlon_audit(client, token, case_id):
+    return client.get("/api/audit/events", params={"case_id": case_id, "action": "tlon.run", "order": "asc"},
+                      headers=token("auditor-demo")).json()["items"]
+
+
+def test_tlon_en_segundo_plano_deja_el_resultado_en_el_trabajo(client, token, fresh_case, llm_up, inline_jobs):
+    headers = token(ANALYST)
+    base = f"/api/cases/{fresh_case}"
+    ids = _tlon_groups(client, base, headers, missing={4})
+    llm_up()
+    r = client.post(f"{base}/tlon/jobs", json={"min_percentile": 0.0, "max_hypotheses": 5}, headers=headers)
+    assert r.status_code == 202, r.text
+    queued = r.json()
+    assert (queued["kind"], queued["case_id"], queued["status"]) == ("tlon", fresh_case, "queued")
+
+    job = client.get(f"/api/jobs/{queued['id']}", headers=headers).json()
+    assert job["status"] == "done" and job["error"] == "" and job["finished_at"]
+    out = job["result"]
+    assert out["status"] == "ok" and out["hypotheses"], out
+    top = out["hypotheses"][0]
+    # Encuentra el mismo vínculo oculto que la corrida síncrona
+    assert (top["src"], top["dst"], top["type"]) == (ids[(4, "a")], ids[(4, "d")], "shares_domain")
+
+    latest = client.get(f"{base}/tlon/latest", headers=headers).json()
+    assert latest["created_relations"] == out["created_relations"]
+    assert latest["hypotheses"][0]["relation_id"] == top["relation_id"]
+    rel = client.get(f"{base}/relations/{top['relation_id']}", headers=headers).json()
+    assert rel["status"] == "proposed" and rel["props"]["motor"] == "tlon"
+
+    events = _tlon_audit(client, token, fresh_case)
+    assert [e["target"] for e in events] == [f"job:{queued['id']}"]
+    assert events[0]["detail"]["status"] == "ok" and events[0]["user_id"] == job["created_by"]
+
+
+def test_tlon_en_segundo_plano_una_corrida_por_caso(client, token, fresh_case, llm_up, queued_jobs):
+    headers = token(ANALYST)
+    base = f"/api/cases/{fresh_case}"
+    _tlon_groups(client, base, headers, missing={4})
+    llm_up()
+    body = {"min_percentile": 0.0, "max_hypotheses": 5}
+    first = client.post(f"{base}/tlon/jobs", json=body, headers=headers)
+    assert first.status_code == 202 and len(queued_jobs) == 1
+
+    again = client.post(f"{base}/tlon/jobs", json=body, headers=headers)
+    assert again.status_code == 409 and "ya está corriendo" in again.json()["detail"]
+    assert len(queued_jobs) == 1
+    assert client.get(f"{base}/tlon/latest", headers=headers).status_code == 404  # todavía no hay resultado
+
+    fn, args = queued_jobs.pop()
+    fn(*args)
+    assert client.get(f"/api/jobs/{first.json()['id']}", headers=headers).json()["status"] == "done"
+    # Terminada la corrida, el caso queda libre
+    assert client.post(f"{base}/tlon/jobs", json=body, headers=headers).status_code == 202
+
+
+@pytest.mark.parametrize("error,shown", [
+    (EngineUnavailable("El servidor de IA no responde."), "El servidor de IA no responde."),
+    (RuntimeError("detalle interno: /ruta/secreta/db.sqlite"), "Error interno al correr TLÖN"),
+])
+def test_tlon_en_segundo_plano_falla_con_motivo_y_sin_filtrar_internos(
+        client, token, fresh_case, inline_jobs, monkeypatch, error, shown):
+    def boom(*args, **kwargs):
+        raise error
+
+    monkeypatch.setattr(tlon_service, "run", boom)
+    headers = token(ANALYST)
+    base = f"/api/cases/{fresh_case}"
+    r = client.post(f"{base}/tlon/jobs", json={}, headers=headers)
+    assert r.status_code == 202, r.text
+    job = client.get(f"/api/jobs/{r.json()['id']}", headers=headers).json()
+    assert job["status"] == "failed" and shown in job["error"] and job["finished_at"]
+    assert "secreta" not in job["error"]
+    assert [e["detail"]["status"] for e in _tlon_audit(client, token, fresh_case)] == ["failed"]
+    # La falla no deja al caso trabado: se puede volver a pedir
+    assert client.post(f"{base}/tlon/jobs", json={}, headers=headers).status_code == 202
+
+
+def test_tlon_en_segundo_plano_auditor_no_puede_pedirlo(client, token, demo_case, inline_jobs):
+    r = client.post(f"/api/cases/{demo_case}/tlon/jobs", json={}, headers=token("auditor-demo"))
+    assert r.status_code == 403
+
+
+def test_trabajos_huerfanos_se_marcan_fallidos_al_arrancar(client, token, fresh_case, demo):
+    from aleph.core.models import Job
+
+    with demo.factory() as session:
+        # La base es compartida por el módulo y otra prueba deja un trabajo en cola a propósito
+        tlon_service.fail_orphans(session)
+        session.commit()
+        session.add_all([Job(case_id=fresh_case, kind="tlon", status=s, params={})
+                         for s in ("running", "queued", "done")])
+        session.commit()
+        assert tlon_service.fail_orphans(session) == 2
+        session.commit()
+    jobs = client.get("/api/jobs", params={"case_id": fresh_case, "kind": "tlon"}, headers=token(ANALYST)).json()
+    assert sorted(j["status"] for j in jobs["items"]) == ["done", "failed", "failed"]
+    assert all(j["error"] == tlon_service.INTERRUPTED for j in jobs["items"] if j["status"] == "failed")
+
+
+def test_la_cola_real_corre_fuera_del_hilo_que_la_llama():
+    done, seen = threading.Event(), []
+
+    def work(value):
+        seen.append((threading.current_thread().name, value))
+        done.set()
+
+    thread_runner(work, 7)
+    assert done.wait(5)
+    assert seen == [(seen[0][0], 7)] and seen[0][0].startswith("aleph-job")
+    assert seen[0][0] != threading.current_thread().name

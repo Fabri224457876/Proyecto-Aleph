@@ -91,7 +91,8 @@ Todas las rutas se usan desde la navegación normal o desde "Más opciones", que
 | GET | `/api/search` | Buscar en los casos que ves (texto y significado) | Barra de búsqueda de arriba y página Buscar |
 | POST | `/api/cases/{case_id}/ask` | Preguntarle al caso: FUNES responde con los datos del caso y los cita | Entender y contar: Preguntarle al caso |
 | GET | `/api/cases/{case_id}/lookup` | Búsqueda OSINT externa: qué fuentes públicas aplican a un dato | Buscar (dentro de un caso): Buscar afuera, en fuentes públicas |
-| POST | `/api/cases/{case_id}/tlon/run` | Entrenar el modelo del caso y proponer vínculos faltantes | Entender y contar: Vínculos posibles |
+| POST | `/api/cases/{case_id}/tlon/run` | Entrenar el modelo del caso y proponer vínculos faltantes (síncrono) | Sin botón: la consola usa la corrida en segundo plano. Sigue disponible por la API |
+| POST | `/api/cases/{case_id}/tlon/jobs` | Correr TLÖN en segundo plano: responde enseguida con el trabajo en cola | Entender y contar: Vínculos posibles (la vista sigue el trabajo y retoma una corrida en curso al abrirse) |
 | GET | `/api/cases/{case_id}/tlon/latest` | Resultado de la última corrida de TLÖN | Entender y contar: Vínculos posibles (al abrir) |
 
 ## Limitaciones conocidas de la API para esta interfaz

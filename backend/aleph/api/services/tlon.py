@@ -6,6 +6,7 @@ Si el LLM no está o no responde, TLÖN igual funciona: las hipótesis entran si
 """
 
 import asyncio
+import logging
 from collections import Counter
 from datetime import UTC, datetime
 
@@ -13,7 +14,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from aleph.core.models import Account, Entity, Relation
+from aleph.core.models import Account, Case, Entity, Job, Relation
 from aleph.funes.client import LLMError
 from aleph.funes.reasoning import InventoryItem, Review, Statement, review_hypotheses
 from aleph.funes.report import RELATIONS_ES
@@ -22,10 +23,13 @@ from aleph.tlon import TlonEdge, TlonInput, TlonNode, propose
 from aleph.tlon.features import node_text
 from aleph.tlon.schemas import Hypothesis, TlonParams, TlonReport
 
-from ..errors import EngineUnavailable
+from .. import auditlog
+from ..errors import Conflict, EngineUnavailable, ServiceError
 from . import search as search_service
 from .funes import NO_CONFIG, NO_RESPONSE, SKIPPED, USED, LlmProbe, make_client
-from .proposals import canonical_json, make_source
+from .proposals import canonical_json, clean_props, make_source
+
+log = logging.getLogger(__name__)
 
 INVENTORY_ENTITIES = 60
 INVENTORY_RELATIONS = 100
@@ -196,3 +200,84 @@ def run(session: Session, case, user_id: int, body: TlonRunIn, *, settings, http
         out.hypotheses.append(HypothesisOut(**h.model_dump(), ref=ref, relation_id=relation_id, review=rv))
     out.warnings = warnings
     return out
+
+
+def audit_detail(out: TlonRunOut) -> dict:
+    """Lo que queda en la auditoría de una corrida: cifras, no contenido."""
+    return {"status": out.status, "nodes": out.nodes, "edges": out.edges, "hypotheses": len(out.hypotheses),
+            "created_relations": out.created_relations, "llm_status": out.llm_status,
+            "embeddings": out.embeddings_status, "source_id": out.source_id, "quality": out.quality}
+
+
+# --- Trabajo en segundo plano -------------------------------------------------------------------
+
+IN_PROGRESS = ("queued", "running")
+INTERRUPTED = "Interrumpido: el servicio se reinició antes de que terminara."
+
+
+def enqueue(session: Session, case, user_id: int, body: TlonRunIn) -> Job:
+    """Deja la corrida en cola. Una a la vez por caso: dos juntas aprenderían de lo mismo y
+    propondrían los mismos vínculos dos veces."""
+    busy = session.execute(select(Job.id).where(Job.case_id == case.id, Job.kind == "tlon",
+                                                Job.status.in_(IN_PROGRESS)).limit(1)).first()
+    if busy is not None:
+        raise Conflict("TLÖN ya está corriendo en este caso. Esperá a que termine antes de pedir otra corrida.")
+    job = Job(case_id=case.id, kind="tlon", status="queued", params=clean_props(body.model_dump()),
+              result={}, error="", created_by=user_id)
+    session.add(job)
+    session.flush()
+    return job
+
+
+def execute_job(bind, job_id: int, user_id: int, body: TlonRunIn, settings, http) -> None:
+    """Corre un trabajo de TLÖN en su propia sesión, fuera del pedido que lo encoló.
+
+    Nunca levanta: lo que pasa queda en el trabajo (`done` con el resultado, o `failed` con el motivo)
+    y en la auditoría. `bind` es el motor de la sesión del pedido.
+    """
+    session = auditlog.guard(Session(bind=bind, expire_on_commit=False))
+    case_id = None
+    try:
+        job = session.get(Job, job_id)
+        case_id = job.case_id
+        job.status = "running"
+        session.commit()
+        out = run(session, session.get(Case, case_id), user_id, body, settings=settings, http=http)
+        job.status = "done"
+        job.result = clean_props(out.model_dump(mode="json"))
+        job.finished_at = datetime.now(UTC)
+        auditlog.record(session, "tlon.run", user_id=user_id, case_id=case_id, target=f"job:{job_id}",
+                        detail=audit_detail(out))
+        session.commit()
+    except Exception as exc:
+        session.rollback()
+        log.exception("TLÖN: falló el trabajo %s", job_id)
+        _mark_failed(session, job_id, user_id, case_id, exc)
+    finally:
+        session.close()
+
+
+def _mark_failed(session: Session, job_id: int, user_id: int, case_id: int | None, exc: Exception) -> None:
+    # A la persona le llega el motivo si es nuestro (un 503 de FUNES, por ejemplo); el resto queda en el registro
+    reason = exc.message if isinstance(exc, ServiceError) else "Error interno al correr TLÖN. Ver el registro del servidor."
+    try:
+        job = session.get(Job, job_id)
+        job.status = "failed"
+        job.error = reason[:500]
+        job.finished_at = datetime.now(UTC)
+        auditlog.record(session, "tlon.run", user_id=user_id, case_id=case_id, target=f"job:{job_id}",
+                        detail={"status": "failed", "error": job.error})
+        session.commit()
+    except Exception:
+        session.rollback()
+        log.exception("TLÖN: no se pudo marcar como fallido el trabajo %s", job_id)
+
+
+def fail_orphans(session: Session) -> int:
+    """Al arrancar: un trabajo que quedó en cola o corriendo murió con el proceso anterior."""
+    orphans = session.execute(select(Job).where(Job.kind == "tlon", Job.status.in_(IN_PROGRESS))).scalars().all()
+    for job in orphans:
+        job.status = "failed"
+        job.error = INTERRUPTED
+        job.finished_at = datetime.now(UTC)
+    return len(orphans)
