@@ -305,7 +305,7 @@ def search(
     post_stmt = (
         select(Post, Account).join(Account, Post.account_id == Account.id)
         .where(Account.case_id == case.id, like(Post.text))
-        .order_by(Post.created_at.desc(), Post.id.desc())
+        .order_by(Post.created_at.desc().nulls_last(), Post.id.desc())
     )
 
     top = PageParams(limit=limit, offset=0)

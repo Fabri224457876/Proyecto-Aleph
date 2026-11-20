@@ -75,9 +75,11 @@ def build_input(session: Session, case_id: int, *, include_proposed: bool) -> Tl
                                 .order_by(Relation.id)).scalars().all()
     edges = [TlonEdge(src=r.src_id, dst=r.dst_id, type=r.type, confirmed=r.status == "confirmed")
              for r in relations if r.src_id in ids and r.dst_id in ids]
-    rejected = session.execute(select(Relation.src_id, Relation.dst_id).where(
-        Relation.case_id == case_id, Relation.status == "rejected")).all()
-    return TlonInput(nodes=nodes, edges=edges, blocked=[(a, b) for a, b in rejected])
+    # No se propone un par que ya tiene una relación fuera de lo que se aprende: las rechazadas
+    # (el analista dijo que no) y, si se aprende solo de lo confirmado, las ya propuestas.
+    known = session.execute(select(Relation.src_id, Relation.dst_id).where(
+        Relation.case_id == case_id, Relation.status.not_in(statuses))).all()
+    return TlonInput(nodes=nodes, edges=edges, blocked=[(a, b) for a, b in known])
 
 
 def _embed_nodes(data: TlonInput, settings, http) -> tuple[str, list[str]]:

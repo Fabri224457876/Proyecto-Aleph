@@ -214,6 +214,36 @@ def test_tlon_propone_revisa_y_guarda_propuestas(client, token, fresh_case, llm_
     assert all((h["src"], h["dst"]) != (top["src"], top["dst"]) for h in fourth["hypotheses"])
 
 
+
+def _tlon_groups(client, base, headers, missing: set[int], n: int = 12) -> dict:
+    ids = {}
+    for g in range(n):
+        for key, (type_, label) in {"p": ("person", f"Persona {g} (ficticia)"), "a": ("account", f"@op_{g}"),
+                                    "m": ("email", f"op{g}@red{g}.test"), "d": ("domain", f"red{g}.test")}.items():
+            ids[(g, key)] = client.post(f"{base}/entities", json={"type": type_, "label": label},
+                                        headers=headers).json()["id"]
+        rels = [("p", "a", "controls"), ("a", "m", "uses_email"), ("m", "d", "belongs_to")]
+        if g not in missing:
+            rels.append(("a", "d", "shares_domain"))
+        for s, d, t in rels:
+            assert client.post(f"{base}/relations", json={"src_id": ids[(g, s)], "dst_id": ids[(g, d)], "type": t},
+                               headers=headers).status_code == 201
+    return ids
+
+
+def test_tlon_no_duplica_lo_ya_propuesto_al_aprender_solo_de_lo_confirmado(client, token, fresh_case, llm_up):
+    headers = token(ANALYST)
+    base = f"/api/cases/{fresh_case}"
+    _tlon_groups(client, base, headers, missing={4, 7})
+    llm_up()
+    body = {"min_percentile": 0.0, "max_hypotheses": 5, "include_proposed": False}
+    first = client.post(f"{base}/tlon/run", json=body, headers=headers).json()
+    pending = {frozenset((h["src"], h["dst"])) for h in first["hypotheses"] if h["relation_id"]}
+    assert pending, first
+    second = client.post(f"{base}/tlon/run", json=body, headers=headers).json()
+    assert all(frozenset((h["src"], h["dst"])) not in pending for h in second["hypotheses"]), second["hypotheses"]
+
+
 def test_tlon_sin_llm_igual_propone_con_aviso(client, token, demo_case):
     r = client.post(f"/api/cases/{demo_case}/tlon/run", json={"min_percentile": 0.0}, headers=token(ANALYST))
     assert r.status_code == 200, r.text

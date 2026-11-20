@@ -152,11 +152,14 @@ def members_case(case: ReadCase, user: Writer) -> Case:
 ManageMembers = Annotated[Case, Depends(members_case)]
 
 
+MAX_OFFSET = 1_000_000_000
+
+
 class PageParams:
     def __init__(
         self,
         limit: Annotated[int, Query(ge=1, le=500, description="Tamaño de página")] = 50,
-        offset: Annotated[int, Query(ge=0, description="Desplazamiento desde el primer resultado")] = 0,
+        offset: Annotated[int, Query(ge=0, le=MAX_OFFSET, description="Desplazamiento desde el primer resultado")] = 0,
     ):
         self.limit = limit
         self.offset = offset

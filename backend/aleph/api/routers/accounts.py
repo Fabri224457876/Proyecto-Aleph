@@ -66,9 +66,9 @@ def list_posts(
     if q and q.strip():
         stmt = stmt.where(Post.text.ilike(like_pattern(q.strip()), escape="\\"))
     if order == "asc":
-        stmt = stmt.order_by(Post.created_at.asc(), Post.id.asc())
+        stmt = stmt.order_by(Post.created_at.asc().nulls_last(), Post.id.asc())
     else:
-        stmt = stmt.order_by(Post.created_at.desc(), Post.id.desc())
+        stmt = stmt.order_by(Post.created_at.desc().nulls_last(), Post.id.desc())
     items, total = paginate(session, stmt, page)
     auditlog.record(session, "account.posts.view", user_id=user.id, case_id=case.id,
                     target=f"account:{account.id}", detail={"offset": page.offset, "limit": page.limit})

@@ -6,7 +6,7 @@ import networkx as nx
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from aleph.core.models import Account, Entity, Relation
+from aleph.core.models import Account, Entity, Finding, Relation
 
 from .. import auditlog
 from ..errors import Conflict, Invalid, NotFound
@@ -130,6 +130,13 @@ class MergeResult:
     relations_repointed: int = 0
     relations_removed: int = 0
     accounts_repointed: int = 0
+    findings_repointed: int = 0
+
+
+def _findings_of(session: Session, case_id: int, entity_id: int) -> list[Finding]:
+    return session.execute(
+        select(Finding).where(Finding.case_id == case_id, Finding.entity_id == entity_id)
+    ).scalars().all()
 
 
 def merge_entities(
@@ -159,6 +166,10 @@ def merge_entities(
     for account in dup_accounts:
         account.entity_id = keep.id
         result.accounts_repointed += 1
+    # Los hallazgos del expediente siguen al dato: pasan a colgar de la entidad que queda.
+    for finding in _findings_of(session, case_id, dup.id):
+        finding.entity_id = keep.id
+        result.findings_repointed += 1
 
     touching = session.execute(
         select(Relation).where(
@@ -213,7 +224,7 @@ def merge_entities(
         detail={
             "kept": keep.id, "merged": duplicate_id, "merged_label": dup_label, "merged_source_id": dup_source,
             "relations_repointed": result.relations_repointed, "relations_removed": result.relations_removed,
-            "accounts_repointed": result.accounts_repointed,
+            "accounts_repointed": result.accounts_repointed, "findings_repointed": result.findings_repointed,
         },
     )
     return result
@@ -273,8 +284,13 @@ def delete_entity(session: Session, case_id: int, entity_id: int, user_id: int |
     ).scalars().all()
     for rel in relations:
         session.delete(rel)
+    # El hallazgo es lo que el analista guardó en el expediente: se conserva, sin la entidad.
+    detached = _findings_of(session, case_id, entity.id)
+    for finding in detached:
+        finding.entity_id = None
     session.flush()
-    detail = {"type": entity.type, "label": entity.label, "relations_deleted": [r.id for r in relations]}
+    detail = {"type": entity.type, "label": entity.label, "relations_deleted": [r.id for r in relations],
+              "findings_detached": [f.id for f in detached]}
     session.delete(entity)
     session.flush()
     auditlog.record(session, "entity.delete", user_id=user_id, case_id=case_id,

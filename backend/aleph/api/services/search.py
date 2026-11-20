@@ -169,7 +169,7 @@ def lexical_search(session: Session, user: User, query: str, *, case_id: int | N
                                 extra={"platform": a.platform, "entity_id": a.entity_id}))
     if "post" in kinds:
         stmt = (select(Post, Account).join(Account, Post.account_id == Account.id)
-                .where(_prefilter([Post.text], toks)).order_by(Post.created_at.desc()))
+                .where(_prefilter([Post.text], toks)).order_by(Post.created_at.desc().nulls_last()))
         for p, a in session.execute(scoped(stmt, Account.case_id).limit(PER_KIND)).all():
             s = _score([(p.text, 1)], toks, phrase)
             if s:
@@ -252,7 +252,7 @@ def case_pool(session: Session, case_id: int, *, limit: int = 200) -> list[Hit]:
                         text=f"Cuenta @{a.handle} en {a.platform}. {a.display_name}. {a.bio}"[:2000],
                         extra={"platform": a.platform, "entity_id": a.entity_id}))
     rows = session.execute(select(Post, Account).join(Account, Post.account_id == Account.id)
-                           .where(Account.case_id == case_id).order_by(Post.created_at.desc()).limit(limit)).all()
+                           .where(Account.case_id == case_id).order_by(Post.created_at.desc().nulls_last()).limit(limit)).all()
     for p, a in rows:
         when = p.created_at.strftime("%d/%m/%Y %H:%M") if p.created_at else "sin fecha"
         pool.append(Hit("post", p.id, case_id, f"@{a.handle} · {when}", p.text[:180],

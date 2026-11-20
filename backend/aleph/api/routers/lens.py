@@ -38,14 +38,14 @@ def _name(value: str | None) -> str | None:
 
 class SectionCreate(BaseModel):
     name: str = Field(max_length=100)
-    position: int | None = Field(default=None, ge=0, description="Por defecto, al final")
+    position: int | None = Field(default=None, ge=0, le=10_000, description="Por defecto, al final")
 
     _clean = field_validator("name")(_name)
 
 
 class SectionUpdate(BaseModel):
     name: str | None = Field(default=None, max_length=100)
-    position: int | None = Field(default=None, ge=0)
+    position: int | None = Field(default=None, ge=0, le=10_000)
 
     _clean = field_validator("name")(_name)
 

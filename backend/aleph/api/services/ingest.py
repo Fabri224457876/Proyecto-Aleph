@@ -14,12 +14,37 @@ from aleph.core.schemas import ENTITY_TYPES, AccountRecord, CollectionResult, Po
 
 from .. import auditlog
 from ..errors import Conflict, Invalid, NotFound
-from .util import as_utc, clamp01
+from .proposals import clean_props
+from .util import as_utc, clamp01, fit
 
 # Datos del AccountRecord que no tienen columna propia se guardan en Account.meta bajo esta clave
 EXTRA_KEY = "aleph"
 _EXTRA_FIELDS = ("avatar_url", "following_handles", "follower_handles")
 _POST_FIELDS = ("text", "lang", "kind", "reply_to", "mentions", "hashtags", "urls", "client", "meta")
+_ACCOUNT_TEXT = ("platform_uid", "display_name", "bio", "url", "avatar_phash")
+
+
+def _account_key(platform: str, handle: str) -> tuple[str, str]:
+    """Plataforma y handle normalizados y recortados al largo de su columna."""
+    return fit(Account, "platform", platform.strip().lower()), fit(Account, "handle", handle.strip().lstrip("@"))
+
+
+def _lang(tag: str) -> str:
+    """Etiqueta de idioma que entra en su columna: se descartan subetiquetas enteras (zh-Hant-TW -> zh-Hant)."""
+    tag = (tag or "").strip()
+    limit = Post.__table__.c.lang.type.length
+    while len(tag) > limit and "-" in tag:
+        tag = tag.rsplit("-", 1)[0]
+    return tag
+
+
+def _post_values(rec: PostRecord) -> dict:
+    values = {f: getattr(rec, f) for f in _POST_FIELDS}
+    values["meta"] = clean_props(values["meta"])
+    values["lang"] = _lang(values["lang"])
+    for field in ("lang", "reply_to", "client"):
+        values[field] = fit(Post, field, values[field] or "")
+    return values
 
 
 class IngestSummary(BaseModel):
@@ -109,8 +134,7 @@ def _canonical_bytes(result: CollectionResult) -> bytes:
 
 
 def _upsert_account(session: Session, case_id: int, rec: AccountRecord, source_id: int) -> tuple[Account, bool]:
-    platform = rec.platform.strip().lower()
-    handle = rec.handle.strip().lstrip("@")
+    platform, handle = _account_key(rec.platform, rec.handle)
     account = session.execute(
         select(Account).where(
             Account.case_id == case_id, Account.platform == platform,
@@ -122,10 +146,10 @@ def _upsert_account(session: Session, case_id: int, rec: AccountRecord, source_i
         account = Account(case_id=case_id, platform=platform, handle=handle, source_id=source_id, meta={})
         session.add(account)
     # Un dato vacío en una recolección posterior no pisa lo que ya se sabía
-    for field in ("platform_uid", "display_name", "bio", "url", "avatar_phash"):
+    for field in _ACCOUNT_TEXT:
         value = getattr(rec, field)
         if value:
-            setattr(account, field, value)
+            setattr(account, field, fit(Account, field, value))
     for field in ("followers", "following"):
         value = getattr(rec, field)
         if value is not None:
@@ -134,7 +158,7 @@ def _upsert_account(session: Session, case_id: int, rec: AccountRecord, source_i
         account.created_at_platform = as_utc(rec.created_at_platform)
     meta = dict(account.meta or {})
     extra = dict(meta.get(EXTRA_KEY) or {})
-    meta.update(rec.meta)
+    meta.update(clean_props(rec.meta))
     for field in _EXTRA_FIELDS:
         value = getattr(rec, field)
         if value:
@@ -154,11 +178,11 @@ def _upsert_posts(session: Session, account: Account, posts: list[PostRecord], s
         for p in session.execute(select(Post).where(Post.account_id == account.id)).scalars()
     }
     for rec in posts:
-        pid = rec.platform_post_id.strip()
+        pid = fit(Post, "platform_post_id", rec.platform_post_id.strip())
         if not pid:
             summary.warnings.append(f"Publicación sin identificador en {account.platform}:{account.handle}; se omitió.")
             continue
-        values = {f: getattr(rec, f) for f in _POST_FIELDS}
+        values = _post_values(rec)
         created_at = as_utc(rec.created_at)
         post = existing.get(pid)
         if post is None:
@@ -213,12 +237,13 @@ def ingest_collection(
     if case.status != "open":
         raise Conflict("El caso no está abierto: no admite nuevas recolecciones.")
 
+    connector = fit(Source, "connector", result.connector)
     raw_bytes = _canonical_bytes(result)
     sha = hashlib.sha256(raw_bytes).hexdigest()
     source = session.execute(
         select(Source).where(
             Source.case_id == case_id, Source.kind == "connector",
-            Source.connector == result.connector, Source.reference == result.reference,
+            Source.connector == connector, Source.reference == result.reference,
             Source.sha256 == sha,
         )
     ).scalars().first()
@@ -234,7 +259,7 @@ def ingest_collection(
                 target.write_bytes(raw_bytes)
             raw_path = rel.as_posix()
         source = Source(
-            case_id=case_id, kind="connector", connector=result.connector, reference=result.reference,
+            case_id=case_id, kind="connector", connector=connector, reference=result.reference,
             sha256=sha, raw_path=raw_path, retrieved_at=as_utc(result.retrieved_at), created_by=user_id,
         )
         session.add(source)
@@ -247,7 +272,8 @@ def ingest_collection(
     refs: dict[str, int] = {}
 
     def norm_key(record: AccountRecord) -> str:
-        return f"{record.platform.strip().lower()}:{record.handle.strip().lstrip('@').lower()}"
+        platform, handle = _account_key(record.platform, record.handle)
+        return f"{platform}:{handle.lower()}"
 
     merged: dict[str, tuple[AccountRecord, list[PostRecord]]] = {}
     aliases: dict[str, str] = {}  # clave tal como la arma el conector -> clave normalizada
@@ -286,7 +312,7 @@ def ingest_collection(
         ).scalars().first()
         if entity is None:
             entity = Entity(
-                case_id=case_id, type=rec.type, label=label, props=dict(rec.props),
+                case_id=case_id, type=rec.type, label=label, props=clean_props(rec.props),
                 confidence=clamp01(rec.confidence), status=entity_status, source_id=source.id,
             )
             session.add(entity)
@@ -314,7 +340,7 @@ def ingest_collection(
         ).scalars().first()
         if relation is None:
             session.add(Relation(
-                case_id=case_id, src_id=src_id, dst_id=dst_id, type=rel_type, props=dict(rec.props),
+                case_id=case_id, src_id=src_id, dst_id=dst_id, type=rel_type, props=clean_props(rec.props),
                 confidence=clamp01(rec.confidence), status=entity_status, source_id=source.id,
             ))
             session.flush()

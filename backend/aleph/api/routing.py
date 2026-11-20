@@ -6,6 +6,7 @@ from fastapi import APIRouter, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
+from sqlalchemy.exc import DataError
 
 from .errors import ServiceError
 from .schemas import Message, ValidationErrorOut
@@ -66,6 +67,12 @@ class AlephRoute(APIRoute):
                 return JSONResponse(status_code=422, content=validation_payload(exc))
             except ServiceError as exc:
                 return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
+            except (OverflowError, DataError):
+                # Un número que no entra en la columna (p. ej. un id de 20 cifras): SQLite lo rechaza
+                # al enlazarlo (OverflowError) y PostgreSQL al ejecutar (DataError). Es un dato
+                # inválido del pedido, no una falla del servidor. La sesión se descarta al cerrar.
+                return JSONResponse(status_code=422, content={
+                    "detail": "Datos inválidos. Un número está fuera del rango permitido."})
 
         return spanish_handler
 
