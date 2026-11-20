@@ -3,6 +3,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+// Los fuentes se leen con LF aunque el repositorio esté clonado en Windows (core.autocrlf=true):
+// las expresiones regulares de estos tests se anclan a saltos de línea.
+const readSource = (file) => readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
 import { join } from 'node:path';
 import { AlephClient, ApiError, normalizeServerUrl } from '../src/lib/api.js';
 import { SendQueue, backoffDelay } from '../src/lib/queue.js';
@@ -89,7 +92,7 @@ test('captures/chunks: el cuerpo es el de ChunksIn (un solo text) y sin texto no
 
   let py = null;
   try {
-    py = readFileSync(join(ROOT, '..', 'backend', 'aleph', 'api', 'routers', 'cti.py'), 'utf8');
+    py = readSource(join(ROOT, '..', 'backend', 'aleph', 'api', 'routers', 'cti.py'));
   } catch {
     t.skip('no está el backend al lado (extensión distribuida sola)');
     return;

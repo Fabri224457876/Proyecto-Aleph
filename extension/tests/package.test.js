@@ -4,6 +4,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+// Los fuentes se leen con LF aunque el repositorio esté clonado en Windows (core.autocrlf=true):
+// las expresiones regulares de estos tests se anclan a saltos de línea.
+const readSource = (file) => readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
 import { join, relative } from 'node:path';
 import { checkAll, listFiles } from './tools/check-syntax.mjs';
 import { ROOT } from './tools/helpers.mjs';
@@ -63,8 +66,8 @@ test('api.js: cada método y ruta que usa existe en los routers reales del backe
   let files;
   try {
     files = {
-      auth: readFileSync(join(routers, 'auth.py'), 'utf8'), cases: readFileSync(join(routers, 'cases.py'), 'utf8'),
-      lens: readFileSync(join(routers, 'lens.py'), 'utf8'), cti: readFileSync(join(routers, 'cti.py'), 'utf8'),
+      auth: readSource(join(routers, 'auth.py')), cases: readSource(join(routers, 'cases.py')),
+      lens: readSource(join(routers, 'lens.py')), cti: readSource(join(routers, 'cti.py')),
     };
   } catch {
     t.skip('no está el backend al lado (extensión distribuida sola)');
@@ -81,7 +84,7 @@ test('api.js: cada método y ruta que usa existe en los routers reales del backe
       real.add(`${m[1].toUpperCase()} ${`${prefix}${m[2]}`.replace(/\{[^}]*\}/g, '{}')}`);
     }
   }
-  const api = readFileSync(join(ROOT, 'src/lib/api.js'), 'utf8');
+  const api = readSource(join(ROOT, 'src/lib/api.js'));
   const used = [...api.matchAll(/this\.request\(\s*'(GET|POST|PATCH|DELETE)',\s*[`'"]([^`'"]+)[`'"]/g)]
     .map((m) => `${m[1]} ${m[2].replace(/\$\{[^}]*\}/g, '{}').replace(/\?.*$/, '')}`);
   assert.ok(used.length >= 9, `se esperaban al menos 9 llamadas en api.js y hay ${used.length}`);
@@ -91,7 +94,7 @@ test('api.js: cada método y ruta que usa existe en los routers reales del backe
 test('el espejo JS del contrato coincide con core/schemas.py', (t) => {
   let py;
   try {
-    py = readFileSync(join(ROOT, '..', 'backend', 'aleph', 'core', 'schemas.py'), 'utf8');
+    py = readSource(join(ROOT, '..', 'backend', 'aleph', 'core', 'schemas.py'));
   } catch {
     t.skip('no está el backend al lado (extensión distribuida sola)');
     return;
@@ -100,7 +103,7 @@ test('el espejo JS del contrato coincide con core/schemas.py', (t) => {
   assert.deepEqual(DEFAULT_SECTIONS, tuple('DEFAULT_SECTIONS'));
   assert.deepEqual(ENTITY_TYPES, tuple('ENTITY_TYPES'));
   const fields = (cls) => [...py.match(new RegExp(`class ${cls}\\(BaseModel\\):([\\s\\S]*?)(?=\\nclass |\\n# ---|\\n[A-Z_]+ = |$)`))[1].matchAll(/^ {4}([a-z_]+):/gm)].map((m) => m[1]).sort();
-  const schema = readFileSync(join(ROOT, 'src/lib/schema.js'), 'utf8');
+  const schema = readSource(join(ROOT, 'src/lib/schema.js'));
   const shape = (name) => [...schema.match(new RegExp(`const ${name} = \\{([\\s\\S]*?)\\n\\};`))[1].matchAll(/^ {2}([a-z_]+):/gm)].map((m) => m[1]).sort();
   assert.deepEqual(shape('POST_SHAPE'), fields('PostRecord'));
   assert.deepEqual(shape('ACCOUNT_SHAPE'), fields('AccountRecord'));

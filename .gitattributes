@@ -1,0 +1,4 @@
+# Lo que corre dentro de contenedores Linux va siempre con LF, aunque el repositorio
+# se clone en Windows con core.autocrlf=true (un "#!/bin/sh" con CRLF no se puede ejecutar).
+*.sh text eol=lf
+deploy/** text eol=lf
