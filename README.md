@@ -118,13 +118,13 @@ Los motores no tocan la base de datos: reciben y devuelven esquemas tipados, y p
 | TLÖN | pasan, incluido chequeo de gradientes | Sobre el caso de demostración sintético con embeddings reales; sin datos reales todavía |
 | Búsqueda | pasan | Texto y significado (bge-m3) sobre el caso de demostración; la búsqueda externa reusa conectores y herramientas |
 | CTI | pasan | STIX validado con la librería `stix2`. Proveedores externos: solo simulados |
-| Conectores | pasan | GitHub parcial. El resto contra ejemplos escritos a mano |
-| Caja OSINT | pasan | Algoritmos verificados con vectores conocidos. APIs: solo simuladas |
+| Conectores | pasan | En vivo, con cuentas oficiales o de prueba: GitHub, Bluesky, Mastodon, canales públicos de Telegram, inteligencia de dominios y búsqueda de usuarios. Reddit exige la API oficial con credenciales (el acceso anónimo responde 403 y Aleph no lo esquiva) y X, una clave. Las importaciones de archivos (X, Instagram, Discord): solo contra ejemplos escritos a mano |
+| Caja OSINT | pasan | Algoritmos verificados con vectores conocidos. En vivo, con objetivos públicos inofensivos: 12 de 13 herramientas; la API pública de ransomware.live responde 404 y la herramienta lo informa. Detalle en [`docs/PRUEBAS_EN_VIVO.md`](docs/PRUEBAS_EN_VIVO.md) |
 | Aleph Lens | pasan | Extractores contra HTML de ejemplo, no contra las páginas reales |
 | Consolas web | build sin errores | Recorridas en navegador contra la API real; sin tests unitarios |
 | Despliegue (Docker Compose) | — | Escrito; falta levantarlo en el nodo de despliegue |
 
-Total: 905 tests de backend (incluido un recorrido de punta a punta sobre el caso de demostración) y 106 de la extensión.
+Total: 913 tests de backend (incluido un recorrido de punta a punta sobre el caso de demostración) y 106 de la extensión.
 
 ## Cómo correrlo
 
@@ -164,7 +164,7 @@ Levanta PostgreSQL 16, la API (puerto 8100) y las dos consolas detrás de nginx 
 - Evaluación de MENARD con datasets públicos de verificación de autoría.
 - Embeddings de estilo en GPU como señal adicional para MENARD.
 - TLÖN sobre casos reales y con más tipos de vínculo; correrlo como trabajo en segundo plano.
-- Validación de conectores y de Aleph Lens contra las plataformas reales.
+- Validar contra las plataformas reales lo que falta: Reddit y X con credenciales oficiales, las importaciones de archivos y Aleph Lens sobre las páginas reales.
 - Levantar el despliegue en el nodo con GPU y correr allí la demo completa.
 
 ## Autoría
