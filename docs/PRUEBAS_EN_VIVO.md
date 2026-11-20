@@ -23,6 +23,31 @@ las hipótesis (la revisión con el modelo ya está probada en la corrida síncr
 
 Pendiente: repetir con el modelo de lenguaje y los embeddings locales, que en esta corrida no estuvieron disponibles.
 
+### Despliegue con Docker Compose en el nodo
+
+El Compose de `deploy/`, construido en el nodo con GPU (Docker Desktop sobre Windows, por SSH) a partir del
+código publicado, con claves generadas al azar y la demo sembrada. Sin IA local conectada.
+
+| Qué se probó | Resultado |
+|---|---|
+| Contenedores | PostgreSQL 16 y API sanos (healthcheck) y nginx arriba; el resto de lo que corre en el nodo, sin tocar |
+| API y consolas por la red | `/health` en la API; las dos consolas devuelven su `index.html`, reenvían `/health` a la API y resuelven las rutas de la SPA |
+| Demo sobre PostgreSQL | Login, caso sembrado (81 entidades, 33 cuentas), búsqueda en ATT&CK y extracción de IOC |
+| TLÖN en segundo plano | 202 en 0,07 s; `running` → `done` en 2,3 s con 8 hipótesis; 409 en un segundo pedido |
+| Auditoría | Cadena íntegra (26 eventos) y el evento `tlon.run` registrado |
+| Suite completa contra PostgreSQL | 920 de 921 pasan, en un contenedor Python con un PostgreSQL 16 descartable. El que falla (`test_payload_is_read_only_and_cannot_be_overwritten`) usa permisos POSIX de archivo y no los respeta root: se comprobó que sin root el permiso sí se aplica |
+
+Lo que apareció al desplegar y se corrigió:
+
+- La imagen instala el paquete de verdad y le faltaba `aleph/cti/data/tlds.txt`: la API no podía sembrar la
+  demo ni extraer IOC. Las pruebas no lo veían porque corren sobre el código fuente. `pyproject.toml` ahora lo
+  declara y un test exige que todo archivo de datos del paquete esté declarado.
+
+Observación del nodo: la configuración de Docker apunta a un *credential helper* que no existe
+(`docker-credential-noop`) y, sin él, Docker recurre a `wincred`, que no tiene sesión de logon en SSH: por SSH,
+bajar imágenes o construir falla con «error getting credentials». Se resolvió con un `DOCKER_CONFIG` propio (con
+`auths` vacío) y `DOCKER_HOST` apuntando al motor, solo para esas órdenes, sin modificar la configuración del nodo.
+
 ## 02/11/2026
 
 IA local: Ollama 0.24 con qwen3:8b (sin razonamiento) y bge-m3 en el nodo con GPU, sobre el caso de

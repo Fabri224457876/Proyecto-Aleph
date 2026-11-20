@@ -111,7 +111,7 @@ Los motores no tocan la base de datos: reciben y devuelven esquemas tipados, y p
 
 | Componente | Tests | Verificado contra el mundo real |
 |---|---|---|
-| Núcleo y API | pasan | Sí, sobre SQLite y sobre PostgreSQL 16 (los 112 tests que tocan la base, incluida la auditoría concurrente) |
+| Núcleo y API | pasan | Sí, sobre SQLite y sobre PostgreSQL 16: la suite completa contra un PostgreSQL descartable en el nodo (920 de 921; el que falla es un test de permisos de archivo, ajeno a la base, que no se cumple porque el contenedor de pruebas corría como root), incluida la auditoría concurrente |
 | Auditoría encadenada | pasan, incluida escritura concurrente | Sí |
 | MENARD | pasan | Solo dataset sintético |
 | FUNES | pasan, incluido el informe en PDF | Reglas: sí. LLM: probado con qwen3:8b local sobre el caso de demostración (informe con todas las afirmaciones citadas, preguntas, contradicciones 3 de 3, revisión de hipótesis); ver [`docs/PRUEBAS_EN_VIVO.md`](docs/PRUEBAS_EN_VIVO.md) |
@@ -122,9 +122,9 @@ Los motores no tocan la base de datos: reciben y devuelven esquemas tipados, y p
 | Caja OSINT | pasan | Algoritmos verificados con vectores conocidos. En vivo, con objetivos públicos inofensivos: 12 de 13 herramientas; la API pública de ransomware.live responde 404 y la herramienta lo informa. Detalle en [`docs/PRUEBAS_EN_VIVO.md`](docs/PRUEBAS_EN_VIVO.md) |
 | Aleph Lens | pasan | Extractores contra HTML de ejemplo, no contra las páginas reales |
 | Consolas web | build sin errores | Recorridas en navegador contra la API real; sin tests unitarios |
-| Despliegue (Docker Compose) | — | Escrito; falta levantarlo en el nodo de despliegue |
+| Despliegue (Docker Compose) | — | Levantado en el nodo con GPU (Docker Desktop sobre Windows): PostgreSQL 16, API y las dos consolas sanas, y la demo recorrida por la red (login, caso sembrado, ATT&CK, extracción de IOC, TLÖN en segundo plano, auditoría íntegra). Sin IA local conectada: FUNES y los embeddings no se probaron en ese despliegue |
 
-Total: 920 tests de backend (incluido un recorrido de punta a punta sobre el caso de demostración) y 106 de la extensión.
+Total: 921 tests de backend (incluido un recorrido de punta a punta sobre el caso de demostración) y 106 de la extensión.
 
 ## Cómo correrlo
 
@@ -165,7 +165,7 @@ Levanta PostgreSQL 16, la API (puerto 8100) y las dos consolas detrás de nginx 
 - Embeddings de estilo en GPU como señal adicional para MENARD.
 - TLÖN sobre casos reales y con más tipos de vínculo. Ya corre como trabajo en segundo plano (`POST /api/cases/{id}/tlon/jobs`); falta repetir esa prueba con la IA local.
 - Validar contra las plataformas reales lo que falta: Reddit y X con credenciales oficiales, las importaciones de archivos y Aleph Lens sobre las páginas reales.
-- Levantar el despliegue en el nodo con GPU y correr allí la demo completa.
+- Conectar la IA local al despliegue del nodo (FUNES y embeddings) y correr allí la demo completa.
 
 ## Autoría
 
