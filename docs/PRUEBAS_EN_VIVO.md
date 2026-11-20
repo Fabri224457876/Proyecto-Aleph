@@ -5,6 +5,24 @@ Corridas de las herramientas, los conectores y la IA contra servicios reales, po
 rangos de ejemplo, vectores de prueba, cuentas oficiales o de prueba de cada plataforma. Nunca
 personas. IA: Ollama con qwen3:8b y bge-m3 en el nodo con GPU.
 
+## 20/11/2026
+
+TLÖN como trabajo en segundo plano, contra la API real (uvicorn, hilo real, SQLite en archivo y la consola
+simple en el navegador) sobre el caso de demostración recién sembrado. Esta corrida fue **sin IA**: sin
+servidor de embeddings ni de lenguaje, así que TLÖN describió las entidades con n-gramas y FUNES no revisó
+las hipótesis (la revisión con el modelo ya está probada en la corrida síncrona del 02/11).
+
+| Qué se probó | Resultado |
+|---|---|
+| `POST /tlon/jobs` | 202 en 0,02 s con el trabajo en cola; la corrida en sí tardó unos 10 s |
+| Un segundo pedido mientras corre | 409 «TLÖN ya está corriendo en este caso» |
+| Seguimiento por `GET /jobs/{id}` | `running` → `done` en 10,3 s; 81 entidades, 45 vínculos, 8 hipótesis propuestas |
+| `GET /tlon/latest` | Coincide con el resultado guardado en el trabajo |
+| Consola simple | Avisa que corre en segundo plano, se actualiza sola al terminar y **retoma una corrida en curso** al recargar la página; sin errores en la consola del navegador ni en el servidor |
+| Auditoría | Un evento `tlon.run` por trabajo y la cadena íntegra (50 eventos) con el hilo de segundo plano escribiendo junto a los pedidos |
+
+Pendiente: repetir con el modelo de lenguaje y los embeddings locales, que en esta corrida no estuvieron disponibles.
+
 ## 02/11/2026
 
 IA local: Ollama 0.24 con qwen3:8b (sin razonamiento) y bge-m3 en el nodo con GPU, sobre el caso de

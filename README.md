@@ -115,7 +115,7 @@ Los motores no tocan la base de datos: reciben y devuelven esquemas tipados, y p
 | Auditoría encadenada | pasan, incluida escritura concurrente | Sí |
 | MENARD | pasan | Solo dataset sintético |
 | FUNES | pasan, incluido el informe en PDF | Reglas: sí. LLM: probado con qwen3:8b local sobre el caso de demostración (informe con todas las afirmaciones citadas, preguntas, contradicciones 3 de 3, revisión de hipótesis); ver [`docs/PRUEBAS_EN_VIVO.md`](docs/PRUEBAS_EN_VIVO.md) |
-| TLÖN | pasan, incluido chequeo de gradientes | Sobre el caso de demostración sintético con embeddings reales; sin datos reales todavía |
+| TLÖN | pasan, incluido chequeo de gradientes y el trabajo en segundo plano | Sobre el caso de demostración sintético con embeddings reales; sin datos reales todavía. En segundo plano: probado contra la API real (hilo real, SQLite en archivo, consola en el navegador) sin IA; con IA todavía no |
 | Búsqueda | pasan | Texto y significado (bge-m3) sobre el caso de demostración; la búsqueda externa reusa conectores y herramientas |
 | CTI | pasan | STIX validado con la librería `stix2`. Proveedores externos: solo simulados |
 | Conectores | pasan | En vivo, con cuentas oficiales o de prueba: GitHub, Bluesky, Mastodon, canales públicos de Telegram, inteligencia de dominios y búsqueda de usuarios. Reddit exige la API oficial con credenciales (el acceso anónimo responde 403 y Aleph no lo esquiva) y X, una clave. Las importaciones de archivos (X, Instagram, Discord): solo contra ejemplos escritos a mano |
@@ -124,7 +124,7 @@ Los motores no tocan la base de datos: reciben y devuelven esquemas tipados, y p
 | Consolas web | build sin errores | Recorridas en navegador contra la API real; sin tests unitarios |
 | Despliegue (Docker Compose) | — | Escrito; falta levantarlo en el nodo de despliegue |
 
-Total: 913 tests de backend (incluido un recorrido de punta a punta sobre el caso de demostración) y 106 de la extensión.
+Total: 920 tests de backend (incluido un recorrido de punta a punta sobre el caso de demostración) y 106 de la extensión.
 
 ## Cómo correrlo
 
@@ -163,7 +163,7 @@ Levanta PostgreSQL 16, la API (puerto 8100) y las dos consolas detrás de nginx 
 
 - Evaluación de MENARD con datasets públicos de verificación de autoría.
 - Embeddings de estilo en GPU como señal adicional para MENARD.
-- TLÖN sobre casos reales y con más tipos de vínculo; correrlo como trabajo en segundo plano.
+- TLÖN sobre casos reales y con más tipos de vínculo. Ya corre como trabajo en segundo plano (`POST /api/cases/{id}/tlon/jobs`); falta repetir esa prueba con la IA local.
 - Validar contra las plataformas reales lo que falta: Reddit y X con credenciales oficiales, las importaciones de archivos y Aleph Lens sobre las páginas reales.
 - Levantar el despliegue en el nodo con GPU y correr allí la demo completa.
 
